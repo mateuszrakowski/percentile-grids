@@ -12,7 +12,7 @@ def create_mock():
     first_names = ["John", "Jane", "Bob", "Alice", "Mark", "Emily"]
     last_names = ["Doe", "Smith", "Johnson", "Williams", "Brown", "Jones"]
 
-    name = random.choice(first_names) + " " + random.choice(last_names)
+    name = random.choice(first_names) + "_" + random.choice(last_names)
 
     df.rename(columns={"XXX": name}, inplace=True)
 

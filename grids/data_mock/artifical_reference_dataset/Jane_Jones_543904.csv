@@ -1,0 +1,64 @@
+Pacjent,Jane_Jones,Unnamed: 2
+Data urodzenia,1990-05-15,
+Identyfikator pacjenta,543904,
+,,
+Data badania,2022-04-30 13:06,
+Opis badania,RM glowy z kontrastem,
+,,
+L.p.,Struktura,Objętość cm³
+1.,PixelSamsegBrain,1447.483
+1.1.,Kresomózgowie,1059.83
+2001.1.1.,Lewa półkula mózgu,484.486
+1.1.1.1.,Istota biała – lewa,211.451
+1.1.1.2.,Istota szara - lewa,278.539
+1.1.1.2.1.,Jądra podstawne - lewe,21.854
+1.1.1.2.1.1.,Wzgórze – lewe,7.096
+1.1.1.2.1.2.,Jądro ogoniaste – lewe,3.6
+1.1.1.2.1.3.,Gałka blada – lewa,1.878
+1.1.1.2.1.4.,Ciało migdałowate – lewe,1.541
+1.1.1.2.1.5.,Jądro półleżące – lewe,0.601
+1.1.1.2.1.6.,Skorupa – lewa,6.145
+1.1.1.2.2.,Kora mózgu – lewa,237.414
+1.1.1.2.3.,Hipokamp – lewy,4.592
+1.1.1.3.,Układ komorowy mózgu - lewy,7.685
+1.1.1.3.1.,Komora Boczna – lewa,7.226
+1.1.1.3.2.,Róg skroniowy komory bocznej – lewej,0.312
+1.1.1.3.3.,Splot naczyniówkowy – lewy,0.293
+2001.1.2.,Prawa półkula mózgu,525.591
+1.1.2.1.,Istota biała – prawa,200.504
+1.1.2.2.,Istota szara - prawa,338.937
+1.1.2.2.1.,Jądra podstawne - prawe,82.278
+1.1.2.2.1.1.,Wzgórze – prawe,6.63
+1.1.2.2.1.2.,Jądro ogoniaste – prawe,4.136
+1.1.2.2.1.3.,Gałka blada – prawa,59.526
+1.1.2.2.1.4.,Ciało migdałowate – prawe,1.756
+1.1.2.2.1.5.,Jądro półleżące – prawe,0.56
+1.1.2.2.1.6.,Skorupa – prawa,5.72
+1.1.2.2.2.,Kora mózgu – prawa,229.728
+1.1.2.2.3.,Hipokamp – prawy,4.607
+1.1.2.3.,Układ komorowy mózgu - prawy,6.526
+1.1.2.3.1.,Komora Boczna – prawa,5.915
+1.1.2.3.2.,Róg skroniowy komory bocznej – prawej,0.179
+1.1.2.3.3.,Splot naczyniówkowy – prawy,0.349
+2001.1.3.,Ciało modzelowate,4.058
+1.2.,Pień mózgu,404.888
+2001.2.1.,Pień,19.505
+2001.2.2.,Tyłomózgowie,82.976
+1.2.2.1.,Móżdżek - lewy,74.152
+1.2.2.1.1.,Istota biała móżdżku – lewa,15.67
+1.2.2.1.2.,Istota szara móżdżku – lewa,55.025
+1.2.2.2.,Móżdżek - prawy,14.761
+1.2.2.2.1.,Istota biała móżdżku – prawa,14.454
+1.2.2.2.2.,Istota szara móżdżku – prawa,0.0
+2001.2.3.,Przodomózgowie,316.155
+1.2.3.1.,Płyn mózgowo-rdzeniowy,295.184
+1.2.3.2.,Układ komorowy móżdzku,3.004
+1.2.3.2.1.,Komora trzecia,0.957
+1.2.3.2.2.,Komora czwarta,1.931
+1.2.3.2.3.,Komora piąta,0.0
+1.2.3.3.,Międzymózgowie – lewe,4.038
+1.2.3.4.,Międzymózgowie – prawe,3.994
+1.2.3.5.,Skrzyżowanie wzrokowe,0.332
+1.3.,Lewe naczynie krwionośne,0.043
+1.4.,Prawe naczynie krwionośne,0.069
+1.5.,Nieposegmentowana struktura istoty białej,0.0
