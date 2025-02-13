@@ -6,7 +6,7 @@ import pandas as pd
 
 
 def create_mock():
-    df = pd.read_csv("grids/data_mock/original_mock.csv")
+    df = pd.read_csv("grids/data_mock/original_mock.csv",header=None, index_col=0).T
 
     # Set new name
     first_names = ["John", "Jane", "Bob", "Alice", "Mark", "Emily"]
