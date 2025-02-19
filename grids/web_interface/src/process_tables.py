@@ -2,6 +2,7 @@ import datetime
 from io import StringIO
 
 import pandas as pd
+import streamlit as st
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 
 
@@ -70,16 +71,23 @@ def process_csv_input(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     return head, body
 
 
-def convert_to_dataframe(input_files: list[UploadedFile]) -> list[pd.DataFrame]:
+def convert_to_dataframes(input_files: list[UploadedFile]) -> list[pd.DataFrame]:
     return [pd.read_csv(StringIO(file.read().decode("utf-8"))) for file in input_files]
 
 
 def load_dataframe(
     current_df_state: pd.DataFrame | None, uploaded_files: list[UploadedFile]
 ) -> pd.DataFrame:
-    dataframes = convert_to_dataframe(uploaded_files)
+    dataframes = convert_to_dataframes(uploaded_files)
     dataframes = [process_csv_input(dataframe)[1] for dataframe in dataframes]
 
-    return pd.concat([current_df_state, pd.concat(dataframes, axis=0)]).reset_index(
-        drop=True
-    )
+    dataframes = pd.concat(
+        [current_df_state, pd.concat(dataframes, axis=0)]
+    ).reset_index(drop=True)
+
+    df_with_checkboxes = dataframes.copy()
+    if "Select" not in df_with_checkboxes.columns:
+        df_with_checkboxes.insert(0, "Select", False)
+    df_with_checkboxes["Select"] = False
+
+    return df_with_checkboxes

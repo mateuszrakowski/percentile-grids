@@ -4,6 +4,7 @@ import streamlit as st
 from src.db_utils import load_db_data, update_db
 
 st.title("Reference dataset")
+st.divider()
 
 if "uploader_key" not in st.session_state:
     st.session_state["uploader_key"] = 1
@@ -11,7 +12,13 @@ if "uploader_key" not in st.session_state:
 table_option = st.sidebar.selectbox(
     "Choose table to display:", ["PatientStructures", "PatientRecords"]
 )
-current_data = load_db_data(table_option)
+
+st.sidebar.divider()
+st.sidebar.text("Display table options:")
+age_attribute = st.sidebar.slider("Select age range: ", 0, 100, (0, 100))
+st.sidebar.divider()
+
+current_data = load_db_data(table_option, *age_attribute)
 
 if current_data is None:
     st.warning(
@@ -21,17 +28,6 @@ else:
     st.write("Number of patients:", len(current_data))
     st.dataframe(current_data)
 
-st.sidebar.divider()
-
-st.sidebar.markdown("Display table options:")
-sex_attribute = st.sidebar.radio(
-    "Select patients sex:",
-    ["All", "Male :male_sign:", "Female :female_sign:"],
-    horizontal=True,
-)
-age_attribute = st.sidebar.slider("Select age range: ", 0, 100, (0, 100))
-
-st.sidebar.divider()
 
 uploaded_files = st.sidebar.file_uploader(
     "Choose a CSV file:",
