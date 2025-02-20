@@ -1,6 +1,7 @@
 from time import sleep
 
 import streamlit as st
+from src.db_utils import load_db_data
 from src.process_tables import load_dataframe
 
 
@@ -23,13 +24,15 @@ if "slider_percentile_age" not in st.session_state:
 
 st.sidebar.text("Percentile calculation settings:")
 age_attribute = st.sidebar.slider(
-    label="Select patients age range from reference dataset: ",
+    label="Patients age range:",
     min_value=0,
     max_value=100,
     value=st.session_state["slider_percentile_age"],
     key="slider_percentile_age_key",
     on_change=update_slider,
 )
+ref_dataset_length = load_db_data("PatientStructures", *age_attribute)
+st.sidebar.write("Number of patients for current range:", len(ref_dataset_length))
 st.sidebar.divider()
 
 uploaded_files = st.sidebar.file_uploader(
