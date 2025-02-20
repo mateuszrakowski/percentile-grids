@@ -3,6 +3,13 @@ from time import sleep
 import streamlit as st
 from src.process_tables import load_dataframe
 
+
+def update_slider():
+    st.session_state["slider_percentile_age"] = st.session_state[
+        "slider_percentile_age_key"
+    ]
+
+
 st.title("Calculate percentile grids")
 
 if "uploader_key" not in st.session_state:
@@ -11,9 +18,17 @@ if "uploader_key" not in st.session_state:
 if "patient_table" not in st.session_state:
     st.session_state["patient_table"] = None
 
+if "slider_percentile_age" not in st.session_state:
+    st.session_state["slider_percentile_age"] = (0, 100)
+
 st.sidebar.text("Percentile calculation settings:")
 age_attribute = st.sidebar.slider(
-    "Select patients age range from reference dataset: ", 0, 100, (0, 100)
+    label="Select patients age range from reference dataset: ",
+    min_value=0,
+    max_value=100,
+    value=st.session_state["slider_percentile_age"],
+    key="slider_percentile_age_key",
+    on_change=update_slider,
 )
 st.sidebar.divider()
 
