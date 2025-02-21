@@ -1,8 +1,17 @@
-import datetime
 from io import StringIO
 
 import pandas as pd
-import streamlit as st
+from src.structures_data import (
+    CerebralCerebellumCortex,
+    CerebralCortex,
+    CerebrospinalFluidTotal,
+    NeuralStructuresTotal,
+    SubcorticalGreyMatter,
+    TotalStructuresVolume,
+    VentricularSupratentorialSystem,
+    WhiteMatterCerebral,
+    WhiteMatterTotal,
+)
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 
 
@@ -67,8 +76,31 @@ def process_csv_input(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
         for col in body.columns
     ]
 
-    body = pd.concat([head, body], axis=1)
-    return head, body
+    processed_dataframe = pd.concat([head, body], axis=1)
+    return processed_dataframe
+
+
+def sum_structure_volumes(structures_df: pd.DataFrame) -> pd.DataFrame:
+    structure_classes = [
+        CerebralCortex,
+        CerebralCerebellumCortex,
+        SubcorticalGreyMatter,
+        WhiteMatterCerebral,
+        WhiteMatterTotal,
+        NeuralStructuresTotal,
+        VentricularSupratentorialSystem,
+        CerebrospinalFluidTotal,
+        TotalStructuresVolume,
+    ]
+    summary_table = structures_df.iloc[:, :6]
+
+    for structure_class in structure_classes:
+        structure_volumes = [
+            float(getattr(structures_df, structure_v)[0])
+            for structure_v in structure_class().model_dump().values()
+        ]
+        summary_table[structure_class.__name__] = round(sum(structure_volumes), 2)
+    return summary_table
 
 
 def convert_to_dataframes(input_files: list[UploadedFile]) -> list[pd.DataFrame]:

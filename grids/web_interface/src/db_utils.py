@@ -3,7 +3,11 @@ import sqlite3
 
 import pandas as pd
 import sqlalchemy
-from src.process_tables import convert_to_dataframes, process_csv_input
+from src.process_tables import (
+    convert_to_dataframes,
+    process_csv_input,
+    sum_structure_volumes,
+)
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 
 
@@ -27,25 +31,30 @@ def db_table_missing(name: str) -> bool:
 
 
 def create_db_tables(cur: sqlite3.Cursor, sample_dataframe: pd.DataFrame) -> None:
-    records, structures = process_csv_input(sample_dataframe)
+    processed_dataframe = process_csv_input(sample_dataframe)
+    structures_summary = sum_structure_volumes(processed_dataframe)
 
-    record_columns = [
+    patient_metadata = [
         f"{col} TEXT" if not "Age" in col else f"{col} INTEGER"
-        for col in records.columns
-    ]
-    structure_columns = record_columns + [
-        f"{col} REAL" for col in structures.columns[6:]
+        for col in processed_dataframe.columns[:6]
     ]
 
-    if db_table_missing("PatientRecords"):
-        cur.execute(
-            f"CREATE TABLE PatientRecords ({', '.join(record_columns)}, "
-            f"UNIQUE(PatientID, StudyDate, StudyDescription) ON CONFLICT IGNORE)"
-        )
+    structure_columns = patient_metadata + [
+        f"{col} REAL" for col in processed_dataframe.columns[6:]
+    ]
+    summary_columns = patient_metadata + [
+        f"{col} REAL" for col in structures_summary.columns[6:]
+    ]
 
     if db_table_missing("PatientStructures"):
         cur.execute(
             f"CREATE TABLE PatientStructures ({', '.join(structure_columns)}, "
+            f"UNIQUE(PatientID, StudyDate, StudyDescription) ON CONFLICT IGNORE)"
+        )
+
+    if db_table_missing("PatientSummary"):
+        cur.execute(
+            f"CREATE TABLE PatientSummary ({', '.join(summary_columns)}, "
             f"UNIQUE(PatientID, StudyDate, StudyDescription) ON CONFLICT IGNORE)"
         )
 
@@ -75,22 +84,23 @@ def update_db(input_files: list[UploadedFile]) -> None:
 
     create_db_tables(cur, dataframes[0])
 
-    records_data = []
     structures_data = []
+    summary_data = []
 
     for input_csv in dataframes:
-        records, structures = process_csv_input(input_csv)
-        records_data.append(records.iloc[0].to_dict())
-        structures_data.append(structures.iloc[0].to_dict())
+        processed_dataframe = process_csv_input(input_csv)
+        structures_summary = sum_structure_volumes(processed_dataframe)
+        structures_data.append(processed_dataframe.iloc[0].to_dict())
+        summary_data.append(structures_summary.iloc[0].to_dict())
 
     cur.executemany(
-        f"INSERT INTO PatientRecords VALUES ({", ".join((f":{col}" for col in records.columns))})",
-        records_data,
+        f"INSERT INTO PatientStructures VALUES ({", ".join((f":{col}" for col in processed_dataframe.columns))})",
+        structures_data,
     )
 
     cur.executemany(
-        f"INSERT INTO PatientStructures VALUES ({", ".join((f":{col}" for col in structures.columns))})",
-        structures_data,
+        f"INSERT INTO PatientSummary VALUES ({", ".join((f":{col}" for col in structures_summary.columns))})",
+        summary_data,
     )
 
     con.commit()

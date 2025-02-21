@@ -5,7 +5,9 @@ from src.db_utils import load_db_data, update_db
 
 
 def update_slider():
-    st.session_state["slider_reference_age"] = st.session_state["slider_reference_age_key"]
+    st.session_state["slider_reference_age"] = st.session_state[
+        "slider_reference_age_key"
+    ]
 
 
 st.title("Reference dataset")
@@ -19,7 +21,7 @@ if "slider_reference_age" not in st.session_state:
 
 
 table_option = st.sidebar.selectbox(
-    "Choose table to display:", ["PatientStructures", "PatientRecords"]
+    "Choose table to display:", ["PatientSummary", "PatientStructures"]
 )
 
 st.sidebar.divider()
