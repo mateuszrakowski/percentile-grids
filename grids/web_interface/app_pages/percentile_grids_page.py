@@ -1,8 +1,10 @@
 from time import sleep
 
+import engine.calculate as engine
+import pandas as pd
 import streamlit as st
-from src.db_utils import load_db_data
-from src.process_tables import load_dataframe
+from web_interface.src.db_utils import load_db_data
+from web_interface.src.process_tables import load_dataframe
 
 
 def update_slider():
@@ -31,8 +33,8 @@ age_attribute = st.sidebar.slider(
     key="slider_percentile_age_key",
     on_change=update_slider,
 )
-ref_dataset_length = load_db_data("PatientStructures", *age_attribute)
-st.sidebar.write("Number of patients for current range:", len(ref_dataset_length))
+ref_dataset = load_db_data("PatientSummary", *age_attribute)
+st.sidebar.write("Number of patients for current range:", len(ref_dataset))
 st.sidebar.divider()
 
 uploaded_files = st.sidebar.file_uploader(
@@ -42,7 +44,7 @@ uploaded_files = st.sidebar.file_uploader(
     key=st.session_state["uploader_key"],
 )
 
-
+selected_df = pd.DataFrame()
 if st.session_state["patient_table"] is not None:
     df = st.session_state["patient_table"]
     st.divider()
@@ -62,7 +64,8 @@ if st.session_state["patient_table"] is not None:
     selected_indices = edited_df.index[edited_df["Select"]].tolist()
     if selected_indices:
         st.write("Selected rows:")
-        st.dataframe(df.iloc[:, 1:].iloc[selected_indices])
+        selected_df = df.iloc[:, 1:].iloc[selected_indices]
+        st.dataframe(selected_df)
 
 if st.sidebar.button("Send data"):
     if not uploaded_files:
@@ -78,3 +81,29 @@ if st.sidebar.button("Send data"):
 
         st.session_state["uploader_key"] += 1
         st.rerun()
+
+st.divider()
+
+if not selected_df.empty:
+    for structure in ref_dataset.iloc[:, 6:].columns:
+        st.write(
+            f"Mean for {structure}:",
+            engine.calculate_mean(ref_dataset, age_attribute, structure),
+        )
+        st.write(
+            f"Std for {structure}:",
+            engine.calculate_std(ref_dataset, age_attribute, structure),
+        )
+        st.write(
+            f"Percentiles for {structure}:",
+            engine.calculate_percentiles(ref_dataset, age_attribute, structure),
+        )
+
+        # fig = engine.plot_age_histogram(ref_dataset, age_attribute, structure)
+        # st.pyplot(fig)
+        fig = engine.plot_percentile_histogram(
+            engine.calculate_percentiles(ref_dataset, age_attribute, structure),
+            age_attribute,
+            structure,
+        )
+        st.pyplot(fig)

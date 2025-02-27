@@ -1,7 +1,7 @@
 from time import sleep
 
 import streamlit as st
-from src.db_utils import load_db_data, update_db
+from web_interface.src.db_utils import load_db_data, update_db
 
 
 def update_slider():

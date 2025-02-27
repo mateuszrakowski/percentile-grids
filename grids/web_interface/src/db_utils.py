@@ -3,7 +3,7 @@ import sqlite3
 
 import pandas as pd
 import sqlalchemy
-from src.process_tables import (
+from web_interface.src.process_tables import (
     convert_to_dataframes,
     process_csv_input,
     sum_structure_volumes,

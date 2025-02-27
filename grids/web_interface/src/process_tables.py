@@ -1,7 +1,7 @@
 from io import StringIO
 
 import pandas as pd
-from src.structures_data import (
+from web_interface.src.structures_data import (
     CerebralCerebellumCortex,
     CerebralCortex,
     CerebrospinalFluidTotal,
@@ -111,7 +111,7 @@ def load_dataframe(
     current_df_state: pd.DataFrame | None, uploaded_files: list[UploadedFile]
 ) -> pd.DataFrame:
     dataframes = convert_to_dataframes(uploaded_files)
-    dataframes = [process_csv_input(dataframe)[1] for dataframe in dataframes]
+    dataframes = [process_csv_input(dataframe) for dataframe in dataframes]
 
     dataframes = pd.concat(
         [current_df_state, pd.concat(dataframes, axis=0)]
