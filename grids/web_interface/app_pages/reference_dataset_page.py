@@ -36,7 +36,11 @@ age_attribute_range = st.sidebar.slider(
 )
 st.sidebar.divider()
 
-current_data = load_db_data(table_option, *st.session_state["slider_reference_age"])
+current_data = load_db_data(
+    table_name=table_option,
+    min_value=-st.session_state["slider_reference_age"][0],
+    max_value=st.session_state["slider_reference_age"][1],
+)
 
 if current_data is None:
     st.warning(

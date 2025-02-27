@@ -1,3 +1,4 @@
+import time
 from time import sleep
 
 import engine.calculate as engine
@@ -13,6 +14,19 @@ def update_slider():
     ]
 
 
+def handle_selection():
+    # Get the edited rows information
+    editor_data = st.session_state["editor_key"]
+
+    if "edited_rows" in editor_data and editor_data["edited_rows"]:
+        current_df = st.session_state["patient_table"].copy()
+        current_df["Select"] = False
+        edited_row_idx = list(editor_data["edited_rows"].keys())[0]
+        current_df.at[int(edited_row_idx), "Select"] = True
+
+        st.session_state["patient_table"] = current_df
+
+
 st.title("Calculate percentile grids")
 
 if "uploader_key" not in st.session_state:
@@ -22,20 +36,8 @@ if "patient_table" not in st.session_state:
     st.session_state["patient_table"] = None
 
 if "slider_percentile_age" not in st.session_state:
-    st.session_state["slider_percentile_age"] = (0, 100)
+    st.session_state["slider_percentile_age"] = (-5, 5)
 
-st.sidebar.text("Percentile calculation settings:")
-age_attribute = st.sidebar.slider(
-    label="Patients age range:",
-    min_value=0,
-    max_value=100,
-    value=st.session_state["slider_percentile_age"],
-    key="slider_percentile_age_key",
-    on_change=update_slider,
-)
-ref_dataset = load_db_data("PatientSummary", *age_attribute)
-st.sidebar.write("Number of patients for current range:", len(ref_dataset))
-st.sidebar.divider()
 
 uploaded_files = st.sidebar.file_uploader(
     "Choose a CSV file for calculation:",
@@ -44,12 +46,27 @@ uploaded_files = st.sidebar.file_uploader(
     key=st.session_state["uploader_key"],
 )
 
+st.sidebar.text("Percentile calculation settings:")
+age_attribute = st.sidebar.slider(
+    label="Patients age range:",
+    min_value=-30,
+    max_value=30,
+    value=st.session_state["slider_percentile_age"],
+    key="slider_percentile_age_key",
+    on_change=update_slider,
+    help=(
+        "The range of patient's age, in years, for which the percentile grids will be calculated. "
+        "The selected patient age is taken and calculated by adding/subtracting the specified value from both ends. "
+        "For example, if the slider value is set to -5/5, the percentile grids will be calculated for patients 5 years older "
+        "and 5 years younger than the selected patient (e.g., 30 years old patient will have percentile grids for 25 and 35 years old patients)."
+    ),
+)
+
 selected_df = pd.DataFrame()
 if st.session_state["patient_table"] is not None:
-    df = st.session_state["patient_table"]
     st.divider()
     edited_df = st.data_editor(
-        df,
+        st.session_state["patient_table"],
         column_config={
             "Select": st.column_config.CheckboxColumn(
                 "Select",
@@ -57,15 +74,27 @@ if st.session_state["patient_table"] is not None:
                 default=False,
             )
         },
-        disabled=df.columns[1:],
+        disabled=st.session_state["patient_table"].columns[1:],
         hide_index=True,
+        key="editor_key",
+        on_change=handle_selection,
     )
 
     selected_indices = edited_df.index[edited_df["Select"]].tolist()
-    if selected_indices:
+    if len(selected_indices) == 1:
         st.write("Selected rows:")
-        selected_df = df.iloc[:, 1:].iloc[selected_indices]
+        selected_df = (
+            st.session_state["patient_table"].iloc[:, 1:].iloc[selected_indices]
+        )
         st.dataframe(selected_df)
+
+        ref_dataset = load_db_data(
+            "PatientSummary", selected_df, *age_attribute
+        )
+        st.sidebar.write(
+            "Number of patients for current range:",
+            len(ref_dataset),
+        )
 
 if st.sidebar.button("Send data"):
     if not uploaded_files:

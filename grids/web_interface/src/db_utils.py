@@ -3,12 +3,12 @@ import sqlite3
 
 import pandas as pd
 import sqlalchemy
+from streamlit.runtime.uploaded_file_manager import UploadedFile
 from web_interface.src.process_tables import (
     convert_to_dataframes,
     process_csv_input,
     sum_structure_volumes,
 )
-from streamlit.runtime.uploaded_file_manager import UploadedFile
 
 
 def init_database(name: str = "grids/reference_dataset.db") -> bool:
@@ -60,10 +60,21 @@ def create_db_tables(cur: sqlite3.Cursor, sample_dataframe: pd.DataFrame) -> Non
 
 
 def load_db_data(
-    table_name: str, min_value: int = 0, max_value: int = 100
+    table_name: str,
+    selected_patient: pd.DataFrame = None,
+    min_value: int = 0,
+    max_value: int = 100,
 ) -> pd.DataFrame | None:
     if db_table_missing(table_name):
         return None
+
+    if not selected_patient.empty:
+        if min_value > 0:
+            min_value = -min_value
+
+        patient_age = int(selected_patient["AgeYears"].iloc[0])
+        min_value = patient_age + min_value if patient_age > abs(min_value) else 0
+        max_value = patient_age + max_value
 
     engine = sqlalchemy.create_engine("sqlite:///grids/reference_dataset.db")
     return pd.read_sql(
@@ -105,12 +116,3 @@ def update_db(input_files: list[UploadedFile]) -> None:
 
     con.commit()
     con.close()
-
-
-def display_db_age(table_name: str, min_value: int, max_value: int) -> None:
-    engine = sqlalchemy.create_engine("sqlite:///grids/reference_dataset.db")
-    return pd.read_sql(
-        f"SELECT * FROM :table WHERE AgeYears BETWEEN :min_value AND :max_value",
-        engine,
-        params={"table": table_name, "min_value": min_value, "max_value": max_value},
-    )
