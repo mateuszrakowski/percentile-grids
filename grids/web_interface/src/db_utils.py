@@ -68,7 +68,7 @@ def load_db_data(
     if db_table_missing(table_name):
         return None
 
-    if not selected_patient.empty:
+    if selected_patient is not None:
         if min_value > 0:
             min_value = -min_value
 

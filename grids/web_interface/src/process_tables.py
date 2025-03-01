@@ -1,6 +1,7 @@
 from io import StringIO
 
 import pandas as pd
+from streamlit.runtime.uploaded_file_manager import UploadedFile
 from web_interface.src.structures_data import (
     CerebralCerebellumCortex,
     CerebralCortex,
@@ -12,7 +13,6 @@ from web_interface.src.structures_data import (
     WhiteMatterCerebral,
     WhiteMatterTotal,
 )
-from streamlit.runtime.uploaded_file_manager import UploadedFile
 
 
 def process_csv_input(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -107,17 +107,20 @@ def convert_to_dataframes(input_files: list[UploadedFile]) -> list[pd.DataFrame]
     return [pd.read_csv(StringIO(file.read().decode("utf-8"))) for file in input_files]
 
 
-def load_dataframe(
+def load_checkbox_dataframe(
     current_df_state: pd.DataFrame | None, uploaded_files: list[UploadedFile]
 ) -> pd.DataFrame:
     dataframes = convert_to_dataframes(uploaded_files)
-    dataframes = [process_csv_input(dataframe) for dataframe in dataframes]
+    standardized_dataframes = [process_csv_input(dataframe) for dataframe in dataframes]
+    sum_structures_dataframes = [
+        sum_structure_volumes(dataframe) for dataframe in standardized_dataframes
+    ]
 
-    dataframes = pd.concat(
-        [current_df_state, pd.concat(dataframes, axis=0)]
+    joined_dataframes = pd.concat(
+        [current_df_state, pd.concat(sum_structures_dataframes, axis=0)]
     ).reset_index(drop=True)
 
-    df_with_checkboxes = dataframes.copy()
+    df_with_checkboxes = joined_dataframes.copy()
     if "Select" not in df_with_checkboxes.columns:
         df_with_checkboxes.insert(0, "Select", False)
     df_with_checkboxes["Select"] = False

@@ -1,11 +1,11 @@
 import time
 from time import sleep
 
-import engine.calculate as engine
 import pandas as pd
 import streamlit as st
+from engine.calculate import analyze_patient
 from web_interface.src.db_utils import load_db_data
-from web_interface.src.process_tables import load_dataframe
+from web_interface.src.process_tables import load_checkbox_dataframe
 
 
 def update_slider():
@@ -38,13 +38,6 @@ if "patient_table" not in st.session_state:
 if "slider_percentile_age" not in st.session_state:
     st.session_state["slider_percentile_age"] = (-5, 5)
 
-
-uploaded_files = st.sidebar.file_uploader(
-    "Choose a CSV file for calculation:",
-    accept_multiple_files=True,
-    type=["csv", "xlsx", "xls"],
-    key=st.session_state["uploader_key"],
-)
 
 st.sidebar.text("Percentile calculation settings:")
 age_attribute = st.sidebar.slider(
@@ -88,19 +81,25 @@ if st.session_state["patient_table"] is not None:
         )
         st.dataframe(selected_df)
 
-        ref_dataset = load_db_data(
-            "PatientSummary", selected_df, *age_attribute
-        )
+        ref_dataset = load_db_data("PatientSummary", selected_df, *age_attribute)
         st.sidebar.write(
             "Number of patients for current range:",
             len(ref_dataset),
         )
 
+st.sidebar.divider()
+uploaded_files = st.sidebar.file_uploader(
+    "Send patients for calculations:",
+    accept_multiple_files=True,
+    type=["csv", "xlsx", "xls"],
+    key=st.session_state["uploader_key"],
+)
+
 if st.sidebar.button("Send data"):
     if not uploaded_files:
         st.warning("Please select CSV files first.")
     else:
-        st.session_state["patient_table"] = load_dataframe(
+        st.session_state["patient_table"] = load_checkbox_dataframe(
             st.session_state["patient_table"], uploaded_files
         )
         with st.spinner("Sending data to the database..."):
@@ -114,25 +113,4 @@ if st.sidebar.button("Send data"):
 st.divider()
 
 if not selected_df.empty:
-    for structure in ref_dataset.iloc[:, 6:].columns:
-        st.write(
-            f"Mean for {structure}:",
-            engine.calculate_mean(ref_dataset, age_attribute, structure),
-        )
-        st.write(
-            f"Std for {structure}:",
-            engine.calculate_std(ref_dataset, age_attribute, structure),
-        )
-        st.write(
-            f"Percentiles for {structure}:",
-            engine.calculate_percentiles(ref_dataset, age_attribute, structure),
-        )
-
-        # fig = engine.plot_age_histogram(ref_dataset, age_attribute, structure)
-        # st.pyplot(fig)
-        fig = engine.plot_percentile_histogram(
-            engine.calculate_percentiles(ref_dataset, age_attribute, structure),
-            age_attribute,
-            structure,
-        )
-        st.pyplot(fig)
+    analyze_patient(selected_df, *age_attribute)
