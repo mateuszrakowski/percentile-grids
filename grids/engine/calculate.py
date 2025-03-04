@@ -7,7 +7,7 @@ from web_interface.src.db_utils import load_db_data
 
 
 def calculate_reference_percentiles(reference_data: pd.DataFrame):
-    percentiles = [1, 5, 10, 25, 50, 75, 90, 95]
+    percentiles = [1, 5, 10, 25, 50, 75, 90, 95, 99]
     calculated_volumes = {}
 
     for column in reference_data.columns:
@@ -25,7 +25,7 @@ def calculate_patient_percentiles(
     patient_percentiles = {}
 
     for structure in reference_percentiles.keys():
-        patient_volume = patient_data[structure]
+        patient_volume = patient_data[structure].iloc[0]
         ref_percentiles = reference_percentiles[structure]
 
         for p in sorted(ref_percentiles.keys()):
@@ -34,11 +34,11 @@ def calculate_patient_percentiles(
                 break
             low_percentile = p
 
-        if patient_volume <= reference_percentiles[10]:
-            patient_percentiles[structure] = "<10"
-        elif patient_volume >= reference_percentiles[90]:
-            patient_percentiles[structure] = ">90"
-        elif patient_volume == reference_percentiles[high_percentile]:
+        if patient_volume <= reference_percentiles[structure][1]:
+            patient_percentiles[structure] = "<1"
+        elif patient_volume >= reference_percentiles[structure][99]:
+            patient_percentiles[structure] = ">99"
+        elif patient_volume == reference_percentiles[structure][high_percentile]:
             patient_percentiles[structure] = high_percentile
         else:
             low_volume = ref_percentiles[low_percentile]
@@ -61,7 +61,9 @@ def analyze_patient(patient_data: pd.DataFrame, min_age: int, max_age: int):
     reference_percentiles = calculate_reference_percentiles(reference_data.iloc[:, 6:])
 
     # Calculate patient's percentiles (return dict or class)
-    patient_percentiles = calculate_patient_percentiles(patient_data, reference_percentiles)
+    patient_percentiles = calculate_patient_percentiles(
+        patient_data, reference_percentiles
+    )
 
     # Create visualization
 
