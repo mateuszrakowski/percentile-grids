@@ -5,7 +5,7 @@ import pickle
 from typing import Any, Callable
 
 
-def disk_cache(cache_dir: str = "grids/.cache"):
+def disk_cache(cache_dir: str = ".cache"):
     os.makedirs(cache_dir, exist_ok=True)
     memory_cache: dict[str, Any] = {}
 
