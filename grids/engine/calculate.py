@@ -1,5 +1,3 @@
-from collections import defaultdict
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -9,8 +7,9 @@ from web_interface.src.db_utils import load_db_data
 PERCENTILES = [5, 10, 25, 50, 75, 90, 95]
 
 
-@disk_cache()
-def calculate_reference_percentiles(reference_data: pd.DataFrame):
+def calculate_reference_percentiles(
+    reference_data: pd.DataFrame,
+) -> dict[str, dict[int, float]]:
     calculated_volumes = {}
 
     for column in reference_data.columns:
@@ -22,7 +21,6 @@ def calculate_reference_percentiles(reference_data: pd.DataFrame):
     return calculated_volumes
 
 
-@disk_cache()
 def bootstrap_percentiles(
     reference_data: pd.DataFrame,
     ref_percentiles: dict[int, float],
@@ -67,8 +65,10 @@ def bootstrap_percentiles(
 
 def calculate_patient_percentiles(
     patient_data: pd.DataFrame, reference_percentiles: dict
-):
-    patient_percentiles = {}
+) -> pd.DataFrame:
+    patient_percentiles = pd.DataFrame(
+        columns=["Structure", "Volume", "Percentile"],
+    )
 
     for structure in reference_percentiles.keys():
         patient_volume = patient_data[structure].iloc[0]
@@ -81,11 +81,11 @@ def calculate_patient_percentiles(
             low_percentile = p
 
         if patient_volume <= reference_percentiles[structure][5]:
-            patient_percentiles[structure] = "<5"
-        elif patient_volume >= reference_percentiles[structure][90]:
-            patient_percentiles[structure] = ">90"
+            patient_percentiles.loc[structure, "Percentile"] = "<5"
+        elif patient_volume >= reference_percentiles[structure][95]:
+            patient_percentiles.loc[structure, "Percentile"] = ">95"
         elif patient_volume == reference_percentiles[structure][high_percentile]:
-            patient_percentiles[structure] = high_percentile
+            patient_percentiles.loc[structure, "Percentile"] = high_percentile
         else:
             low_volume = ref_percentiles[low_percentile]
             high_volume = ref_percentiles[high_percentile]
@@ -94,7 +94,15 @@ def calculate_patient_percentiles(
                 patient_volume - low_volume
             ) / (high_volume - low_volume)
 
-        patient_percentiles[structure] = round(interpolated, 1)
+            patient_percentiles.loc[structure, "Percentile"] = round(interpolated, 2)
+
+        patient_percentiles.loc[structure, "Structure"] = structure
+        patient_percentiles.loc[structure, "Volume"] = patient_volume
+
+    patient_percentiles.reset_index(drop=True, inplace=True)
+
+    patient_percentiles["Percentile"] = patient_percentiles["Percentile"].astype(str)
+    patient_percentiles["Volume"] = patient_percentiles["Volume"].astype(str)
 
     return patient_percentiles
 
@@ -102,7 +110,7 @@ def calculate_patient_percentiles(
 def create_bootstrap_table(
     bootstrap_results: dict[str, dict[int, dict[str, float]]],
     structure: str,
-):
+) -> pd.DataFrame:
     comparison = pd.DataFrame(
         index=PERCENTILES,
         columns=[
@@ -177,42 +185,7 @@ def create_bootstrap_table(
     return readable_table
 
 
-def generate_ref_percentiles_plot(bootstrap_table: pd.DataFrame):
-    ci_range = bootstrap_table["Precision (±)"].apply(lambda x: float(x.strip("%±")))
-
-    # Create visualization of precision across percentiles
-    fig, ax = plt.subplots(figsize=(12, 6))
-    ax.plot(
-        PERCENTILES,
-        ci_range,
-        "o-",
-        linewidth=2,
-        markersize=10,
-    )
-    ax.set_title("Relative Precision (±%) Across Percentiles")
-    ax.set_xlabel("Percentile")
-    ax.set_ylabel("Relative Error (%)")
-    ax.grid(True, alpha=0.3)
-    ax.set_xticks(PERCENTILES)
-    ax.axhline(
-        y=0.5, color="green", linestyle="--", alpha=0.7, label="High Precision (0.5%)"
-    )
-    ax.axhline(
-        y=1.0,
-        color="orange",
-        linestyle="--",
-        alpha=0.7,
-        label="Moderate Precision (1.0%)",
-    )
-    ax.axhline(
-        y=2.0, color="red", linestyle="--", alpha=0.7, label="Low Precision (2.0%)"
-    )
-    ax.legend()
-    fig.tight_layout()
-
-    return fig
-
-
+@disk_cache()
 def reference_bootstrap_percentiles(reference_data: pd.DataFrame):
     ref_percentiles = calculate_reference_percentiles(reference_data)
     bootstrap_results = bootstrap_percentiles(reference_data, ref_percentiles)
@@ -223,6 +196,7 @@ def reference_bootstrap_percentiles(reference_data: pd.DataFrame):
     ]
 
 
+@disk_cache()
 def analyze_patient(patient_data: pd.DataFrame, min_age: int, max_age: int):
     # Load reference data with given age range
     reference_data = load_db_data("PatientSummary", patient_data, min_age, max_age)
@@ -230,11 +204,5 @@ def analyze_patient(patient_data: pd.DataFrame, min_age: int, max_age: int):
     # Calculate percentiles for reference data (return dict or class)
     reference_percentiles = calculate_reference_percentiles(reference_data.iloc[:, 6:])
 
-    # Calculate patient's percentiles (return dict or class)
-    patient_percentiles = calculate_patient_percentiles(
-        patient_data, reference_percentiles
-    )
-
-    # Create visualization
-
-    # Generate raport?
+    # Calculate patient's percentiles
+    return calculate_patient_percentiles(patient_data, reference_percentiles)
