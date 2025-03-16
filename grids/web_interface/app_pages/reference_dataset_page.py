@@ -1,10 +1,9 @@
+import time
 from time import sleep
 
 import streamlit as st
-from engine.calculate import (
-    generate_ref_percentiles_plot,
-    reference_bootstrap_percentiles,
-)
+from engine.calculate import reference_bootstrap_percentiles
+from engine.visualization import generate_ref_percentiles_plot
 from web_interface.src.db_utils import load_db_data, update_db
 
 
@@ -43,12 +42,6 @@ age_attribute_range = st.sidebar.slider(
     on_change=update_slider,
 )
 
-if table_option == "PatientSummary":
-    calc_button = st.sidebar.button(
-        "Calculate reference percentiles", key="calc_button"
-    )
-
-st.sidebar.divider()
 
 current_data = load_db_data(
     table_name=table_option,
@@ -56,14 +49,20 @@ current_data = load_db_data(
     max_value=st.session_state["slider_reference_age"][1],
 )
 
+
 if current_data is None:
     st.warning(
         "The database is empty. Please upload a CSV file to populate the database."
     )
 else:
-    st.write("Number of patients:", len(current_data))
     st.dataframe(current_data)
+    st.sidebar.write("Number of patients for current range:", len(current_data))
 
+if table_option == "PatientSummary":
+    calc_button = st.sidebar.button(
+        "Calculate reference percentiles", key="calc_button"
+    )
+st.sidebar.divider()
 
 uploaded_files = st.sidebar.file_uploader(
     "Choose a CSV file:",
@@ -85,7 +84,7 @@ if st.sidebar.button("Send data to the database"):
         st.rerun()
 
 
-if table_option == "PatientSummary":
+if table_option == "PatientSummary" and current_data is not None:
     st.divider()
 
     structure_names = list(current_data.columns[6:])
@@ -97,22 +96,22 @@ if table_option == "PatientSummary":
             bootstrap_perc_tables = reference_bootstrap_percentiles(structure_data)
             st.session_state.bootstrap_perc_tables = bootstrap_perc_tables
 
-    if st.session_state.structure_names:
-        structure_tabs = st.tabs(st.session_state.structure_names)
+        if st.session_state.structure_names:
+            structure_tabs = st.tabs(st.session_state.structure_names)
 
-        # Display tables if they've been calculated
-        if st.session_state.bootstrap_perc_tables is not None:
-            for tab, table in zip(
-                structure_tabs, st.session_state.bootstrap_perc_tables
-            ):
-                with tab:
-                    col1, col2 = st.columns(2)
+            # Display tables if they've been calculated
+            if st.session_state.bootstrap_perc_tables is not None:
+                for tab, table in zip(
+                    structure_tabs, st.session_state.bootstrap_perc_tables
+                ):
+                    with tab:
+                        col1, col2 = st.columns(2)
 
-                    with col1:
-                        st.dataframe(table, use_container_width=True)
+                        with col1:
+                            st.dataframe(table, use_container_width=True)
 
-                    with col2:
-                        st.pyplot(
-                            generate_ref_percentiles_plot(table),
-                            use_container_width=True,
-                        )
+                        with col2:
+                            st.pyplot(
+                                generate_ref_percentiles_plot(table),
+                                use_container_width=True,
+                            )

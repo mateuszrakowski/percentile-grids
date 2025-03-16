@@ -1,9 +1,9 @@
-import time
 from time import sleep
 
 import pandas as pd
 import streamlit as st
 from engine.calculate import analyze_patient
+from engine.visualization import create_boxplot, create_data_heatmap
 from web_interface.src.db_utils import load_db_data
 from web_interface.src.process_tables import load_checkbox_dataframe
 
@@ -41,7 +41,7 @@ if "slider_percentile_age" not in st.session_state:
 
 st.sidebar.text("Percentile calculation settings:")
 age_attribute = st.sidebar.slider(
-    label="Patients age range:",
+    label="Select age range: ",
     min_value=-30,
     max_value=30,
     value=st.session_state["slider_percentile_age"],
@@ -75,7 +75,7 @@ if st.session_state["patient_table"] is not None:
 
     selected_indices = edited_df.index[edited_df["Select"]].tolist()
     if len(selected_indices) == 1:
-        st.write("Selected rows:")
+        st.write("Selected row:")
         selected_df = (
             st.session_state["patient_table"].iloc[:, 1:].iloc[selected_indices]
         )
@@ -113,4 +113,22 @@ if st.sidebar.button("Send data"):
 st.divider()
 
 if not selected_df.empty:
-    analyze_patient(selected_df, *age_attribute)
+    st.header(f"Patient {selected_df.PatientID.iloc[0]}")
+    patient_percentiles_table = analyze_patient(selected_df, *age_attribute)
+
+    graph_tabs = st.tabs(["Heatmap", "Box plot"])
+
+    with graph_tabs[0]:
+        col1, col2 = st.columns([0.40, 0.60])
+        with col1:
+            st.dataframe(
+                patient_percentiles_table, use_container_width=True, hide_index=True
+            )
+
+        with col2:
+            st.pyplot(create_data_heatmap(patient_percentiles_table))
+
+    with graph_tabs[1]:
+        col1, col2 = st.columns([0.70, 0.30])
+        with col1:
+            st.pyplot(create_boxplot(patient_percentiles_table))
