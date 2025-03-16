@@ -39,25 +39,25 @@ def process_csv_input(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
         inplace=True,
     )
 
-    today = pd.Timestamp.today()
+    study_date = pd.to_datetime(head["StudyDate"])
+    birth_date = pd.to_datetime(head["BirthDate"])
 
     head["AgeYears"] = (
-        today.year
-        - pd.to_datetime(head["BirthDate"]).dt.year
+        study_date.dt.year[0]
+        - birth_date.dt.year[0]
         - (
-            (today.month, today.day)
+            (study_date.dt.month[0], study_date.dt.day[0])
             < (
-                pd.to_datetime(head["BirthDate"]).dt.month[0],
-                pd.to_datetime(head["BirthDate"]).dt.day[0],
+                birth_date.dt.month[0],
+                birth_date.dt.day[0],
             )
         )
     )
 
-    head["AgeMonths"] = (today.month - pd.to_datetime(head["BirthDate"]).dt.month) % 12
+    head["AgeMonths"] = (study_date.dt.month[0] - birth_date.dt.month) % 12
 
-    birth_days = pd.to_datetime(head["BirthDate"]).dt.day
-    head.loc[today.day < birth_days, "AgeMonths"] = (
-        head.loc[today.day < birth_days, "AgeMonths"] - 1
+    head.loc[study_date.dt.day < birth_date.dt.day, "AgeMonths"] = (
+        head.loc[study_date.dt.day < birth_date.dt.day, "AgeMonths"] - 1
     ) % 12
 
     head = head[
