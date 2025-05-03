@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from engine.calculate import PERCENTILES
+from grids.engine.deprecated_calculate import PERCENTILES
 
 
 def generate_ref_percentiles_plot(bootstrap_table: pd.DataFrame) -> plt.Figure:

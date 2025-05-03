@@ -8,7 +8,7 @@ import rpy2.robjects.packages as rpackages
 from rpy2.rinterface_lib.embedded import RRuntimeError
 from rpy2.robjects import pandas2ri
 from rpy2.robjects.conversion import localconverter
-from scipy.stats import skewnorm
+from scipy.stats import norm
 
 # --- 1. Setup rpy2 ---
 pandas2ri.activate()
@@ -116,16 +116,45 @@ formula_tau = robjects.Formula("~ 1")
 
 # --- 6. Fit the GAMLSS model using BCPE ---
 gamlss_model = None
+model_filepath_to_load = os.path.abspath("gamlss_model_BCPE.rds")
+
+if os.path.exists(model_filepath_to_load):
+    try:
+        print(f"\nLoading model from: {model_filepath_to_load}")
+        # Get the readRDS function
+        readRDS = base.readRDS
+        # Load the R object
+        gamlss_model = readRDS(model_filepath_to_load)
+        print("Model loaded successfully.")
+        # Optional: Print summary to verify
+        # print(robjects.r.summary(loaded_model))
+    except Exception as e:
+        print(f"Error loading model from {model_filepath_to_load}: {e}")
+else:
+    print(f"Error: Model file not found at {model_filepath_to_load}")
+
 try:
-    gamlss_model = gamlss_r.gamlss(
-        formula=formula_mu,
-        sigma_formula=formula_sigma,
-        nu_formula=formula_nu,
-        tau_formula=formula_tau,
-        family="BCPE",
-        data=df_r,
-        control=gamlss_r.gamlss_control(n_cyc=3000, trace=False),
-    )
+    if not gamlss_model:
+        gamlss_model = gamlss_r.gamlss(
+            formula=formula_mu,
+            sigma_formula=formula_sigma,
+            nu_formula=formula_nu,
+            tau_formula=formula_tau,
+            family="BCPE",
+            data=df_r,
+            control=gamlss_r.gamlss_control(n_cyc=3000, trace=False),
+        )
+
+        try:
+            model_filename = "gamlss_model_BCPE.rds"  # Use .rds extension
+            model_filepath = os.path.abspath(model_filename)
+            # Get the saveRDS function from R's base package
+            saveRDS = base.saveRDS
+            # Save the R object to the file
+            saveRDS(gamlss_model, file=model_filepath)
+            print(f"\nFitted GAMLSS model saved successfully to: {model_filepath}")
+        except Exception as e:
+            print(f"Error saving GAMLSS model: {e}")
 
     # --- 6b. Calculate BIC ---
     # BIC (Bayesian Information Criterion) helps compare models (lower is better)
@@ -239,6 +268,142 @@ try:
     plot_range = plot_max_y - plot_min_y
     plt.ylim(plot_min_y - 0.1 * plot_range, plot_max_y + 0.1 * plot_range)
     plt.show()
+
+    if gamlss_model:
+        # --- >>> NEW: Define Out-of-Sample Individual Data <<< ---
+        oos_age = 45
+        oos_volume = 1300
+        print(f"\n--- Out-of-Sample Individual ---")
+        print(f"Age: {oos_age}, Volume: {oos_volume}")
+
+        # --- >>> NEW: Calculate Z-score and Percentile for OOS Individual <<< ---
+        oos_zscore = None
+        oos_percentile = None
+        print("\nCalculating Z-score and Percentile for OOS individual...")
+        print(
+            "WARNING: Applying model to single individual without site calibration - interpret with caution."
+        )
+        try:
+            # Get the centiles.pred function
+            centiles_pred_func = gamlss_r.centiles_pred
+
+            # Prepare inputs for centiles.pred
+            # Needs the original predictor name used in the formula
+            x_name_in_model = "x"
+            x_value_r = robjects.FloatVector([oos_age])
+            y_value_r = robjects.FloatVector([oos_volume])
+
+            # Call centiles.pred to get the Z-score
+            zscore_result_r = centiles_pred_func(
+                gamlss_model,
+                type="z-scores",
+                xname=x_name_in_model,
+                xvalues=x_value_r,
+                yval=y_value_r,
+            )
+
+            # Extract the Z-score (it's usually the first element)
+            oos_zscore = np.array(zscore_result_r)[0]
+
+            # Convert Z-score to percentile (CDF of standard normal distribution)
+            oos_percentile = norm.cdf(oos_zscore)
+
+            print(f"Calculated Z-score: {oos_zscore:.3f}")
+            print(
+                f"Calculated Percentile: {oos_percentile:.4f} (or {oos_percentile*100:.2f}%)"
+            )
+
+        except RRuntimeError as r_err:
+            print(f"R Error calculating Z-score: {r_err}")
+        except Exception as e:
+            print(f"Error calculating Z-score/Percentile: {e}")
+
+        # --- Plot OOS Individual against Reference Curves ---
+        print("\nGenerating plot for OOS individual...")
+        plt.figure(figsize=(12, 7))
+
+        # Plot background percentile curves if available
+        if percentile_curves:
+            for p, curve_data in percentile_curves.items():
+                linestyle = "-" if p == 0.50 else "--"
+                linewidth = 1.0  # Make reference lines thinner
+                alpha_line = 0.5  # Make reference lines lighter
+                label = (
+                    f"{int(p*100)}th Perc (BCPE Ref)"
+                    if p in [0.05, 0.50, 0.95]
+                    else None
+                )  # Label only a few
+                plt.plot(
+                    np.linspace(0, 100, 200),
+                    curve_data,
+                    label=label,
+                    linestyle=linestyle,
+                    linewidth=linewidth,
+                    alpha=alpha_line,
+                    color="gray",
+                )
+
+        # Scatter plot the TRAINING data points (optional, for context)
+        plt.scatter(
+            df_py["x"],
+            df_py["y"],
+            alpha=0.15,
+            label=f"Training Data (0-100 yrs)",
+            s=15,
+            color="lightblue",
+        )
+
+        # Plot the OOS individual's point
+        plt.scatter(
+            [oos_age],
+            [oos_volume],
+            color="red",
+            s=80,
+            zorder=5,
+            label=f"OOS Individual (Age={oos_age}, Vol={oos_volume})",
+        )
+
+        # Annotate the OOS point with its score
+        if oos_percentile is not None:
+            plt.annotate(
+                f" P{oos_percentile*100:.1f}\n (Z={oos_zscore:.2f})",
+                (oos_age, oos_volume),
+                textcoords="offset points",
+                xytext=(0, 10),
+                ha="center",
+                color="red",
+            )
+        else:
+            plt.annotate(
+                f"Score N/A",
+                (oos_age, oos_volume),
+                textcoords="offset points",
+                xytext=(0, 10),
+                ha="center",
+                color="red",
+            )
+
+        plt.xlabel("Age")
+        plt.ylabel("Volume")
+        plt.title(f"GAMLSS Model (BCPE) Trained on 0-100 Yrs: OOS Individual Score")
+        plt.legend(fontsize=9)
+        plt.grid(True, alpha=0.3)
+        # Adjust limits based on predicted range + OOS point
+        ymin = (
+            min(np.percentile(df_py["y"], 1), oos_volume * 0.9)
+            if percentile_curves
+            else oos_volume * 0.9
+        )
+        ymax = (
+            max(np.percentile(df_py["y"], 99), oos_volume * 1.1)
+            if percentile_curves
+            else oos_volume * 1.1
+        )
+        plt.ylim(ymin, ymax)
+        plt.xlim(0, 100)
+        plt.show()
+
+    # --- No separate table needed for a single point, info was printed ---
 
 finally:
     # --- 11. Clean up ---

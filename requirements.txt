@@ -5,3 +5,5 @@ pydantic
 matplotlib
 seaborn
 numpy
+rpy2
+scipy
