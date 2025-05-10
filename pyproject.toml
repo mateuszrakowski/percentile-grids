@@ -1,0 +1,63 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "percentile-grids-app"
+version = "0.1.0"
+description = "Streamlit based application for calculating percentile grids"
+readme = "README.md"
+authors = [
+    {name = "Mateusz Rakowski", email = "racz3k97@gmail.com"},
+]
+license = {text = "MIT"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=2.2.5",
+    "matplotlib>=3.10.3",
+    "seaborn>=0.13.2",
+    "pandas>=2.2.3",
+    "sqlalchemy>=2.0.40",
+    "streamlit>=1.45.0",
+    "pydantic>=2.11.4",
+    "scipy>=1.15.3",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/mateuszrakowski/percentile-grids"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.5",
+    "black>=25.1.0",
+    "isort>=5.13.2",
+    "mypy>=1.15.0",
+    "flake8>=7.1.1",
+]
+
+[tool.black]
+line-length = 88
+target-version = ["py312"]
+
+[tool.flake8]
+line-length = 88
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"

@@ -172,4 +172,4 @@ cython_debug/
 .pypirc
 
 # Database
-grids/reference_dataset.db
+src/grids/reference_dataset.db

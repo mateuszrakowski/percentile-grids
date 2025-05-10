@@ -2,7 +2,7 @@ from io import StringIO
 
 import pandas as pd
 from streamlit.runtime.uploaded_file_manager import UploadedFile
-from web_interface.src.structures_data import (
+from web_interface.db.structures_data import (
     CerebralCerebellumCortex,
     CerebralCortex,
     CerebrospinalFluidTotal,
@@ -72,7 +72,7 @@ def process_csv_input(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     ]
 
     body.columns = [
-        f"{col.replace(" – ", "_").replace(" - ", "_").replace(" ", "_").replace("-", '_')}"
+        col.replace(" – ", "_").replace(" - ", "_").replace(" ", "_").replace("-", "_")
         for col in body.columns
     ]
 

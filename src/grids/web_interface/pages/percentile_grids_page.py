@@ -2,10 +2,10 @@ from time import sleep
 
 import pandas as pd
 import streamlit as st
-from grids.engine.deprecated_calculate import analyze_patient
+from grids.engine.calculate import analyze_patient
 from engine.visualization import create_boxplot, create_data_heatmap
-from web_interface.src.db_utils import load_db_data
-from web_interface.src.process_tables import load_checkbox_dataframe
+from web_interface.db.db_utils import load_db_data
+from web_interface.db.process_tables import load_checkbox_dataframe
 
 
 def update_slider():

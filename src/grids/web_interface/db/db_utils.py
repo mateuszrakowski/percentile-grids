@@ -4,14 +4,14 @@ import sqlite3
 import pandas as pd
 import sqlalchemy
 from streamlit.runtime.uploaded_file_manager import UploadedFile
-from web_interface.src.process_tables import (
+from web_interface.db.process_tables import (
     convert_to_dataframes,
     process_csv_input,
     sum_structure_volumes,
 )
 
 
-def init_database(name: str = "grids/reference_dataset.db") -> bool:
+def init_database(name: str = "src/grids/reference_dataset.db") -> bool:
     if not os.path.exists(name):
         conn = sqlite3.connect(name)
         conn.close()
@@ -20,7 +20,7 @@ def init_database(name: str = "grids/reference_dataset.db") -> bool:
 def db_table_missing(name: str) -> bool:
     init_database()
 
-    con = sqlite3.connect("grids/reference_dataset.db")
+    con = sqlite3.connect("src/grids/reference_dataset.db")
     cur = con.cursor()
 
     cur.execute(
@@ -35,7 +35,7 @@ def create_db_tables(cur: sqlite3.Cursor, sample_dataframe: pd.DataFrame) -> Non
     structures_summary = sum_structure_volumes(processed_dataframe)
 
     patient_metadata = [
-        f"{col} TEXT" if not "Age" in col else f"{col} INTEGER"
+        f"{col} TEXT" if "Age" not in col else f"{col} INTEGER"
         for col in processed_dataframe.columns[:6]
     ]
 
@@ -76,7 +76,7 @@ def load_db_data(
         min_value = patient_age + min_value if patient_age > abs(min_value) else 0
         max_value = patient_age + max_value
 
-    engine = sqlalchemy.create_engine("sqlite:///grids/reference_dataset.db")
+    engine = sqlalchemy.create_engine("sqlite:///src/grids/reference_dataset.db")
     return pd.read_sql(
         f"SELECT * FROM {table_name} WHERE AgeYears BETWEEN :min_value AND :max_value",
         engine,
@@ -90,7 +90,7 @@ def load_db_data(
 def update_db(input_files: list[UploadedFile]) -> None:
     dataframes = convert_to_dataframes(input_files)
 
-    con = sqlite3.connect("grids/reference_dataset.db")
+    con = sqlite3.connect("src/grids/reference_dataset.db")
     cur = con.cursor()
 
     create_db_tables(cur, dataframes[0])
@@ -105,12 +105,18 @@ def update_db(input_files: list[UploadedFile]) -> None:
         summary_data.append(structures_summary.iloc[0].to_dict())
 
     cur.executemany(
-        f"INSERT INTO PatientStructures VALUES ({", ".join((f":{col}" for col in processed_dataframe.columns))})",
+        (
+            f"INSERT INTO PatientStructures VALUES "
+            f"({", ".join((f":{col}" for col in processed_dataframe.columns))})"
+        ),
         structures_data,
     )
 
     cur.executemany(
-        f"INSERT INTO PatientSummary VALUES ({", ".join((f":{col}" for col in structures_summary.columns))})",
+        (
+            f"INSERT INTO PatientSummary VALUES "
+            f"({", ".join((f":{col}" for col in structures_summary.columns))})"
+        ),
         summary_data,
     )
 

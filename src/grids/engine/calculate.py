@@ -1,8 +1,7 @@
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from engine.data_cache import disk_cache
-from web_interface.src.db_utils import load_db_data
+from web_interface.db.db_utils import load_db_data
 
 PERCENTILES = [5, 10, 25, 50, 75, 90, 95]
 
@@ -42,7 +41,8 @@ def bootstrap_percentiles(
             for j, p in enumerate(PERCENTILES):
                 bootstrap_percentiles[i, j] = np.percentile(sample, p)
 
-        # For confidence 95%, alpha needs to be half of the 5% for left and right tail of the distribution
+        # For confidence 95%, alpha needs to be half of the 5% for left
+        # and right tail of the distribution
         alpha = (1 - confidence) / 2
 
         for j, p in enumerate(PERCENTILES):

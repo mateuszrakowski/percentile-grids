@@ -1,10 +1,8 @@
-import re
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from grids.engine.deprecated_calculate import PERCENTILES
+from grids.engine.calculate import PERCENTILES
 
 
 def generate_ref_percentiles_plot(bootstrap_table: pd.DataFrame) -> plt.Figure:
@@ -75,7 +73,7 @@ def create_custom_colormap():
     - High values (>95) in bright green
     - Normal values in neutral blues
     """
-    from matplotlib.colors import LinearSegmentedColormap, ListedColormap
+    from matplotlib.colors import LinearSegmentedColormap
 
     colors = [
         (0.8, 0.0, 0.0),  # Red for low outliers
@@ -131,7 +129,7 @@ def create_data_heatmap(patient_percentiles: pd.DataFrame) -> plt.Figure:
         cbar_kws={"label": "Percentile"},
         vmin=0,
         vmax=100,
-        alpha=0.9
+        alpha=0.9,
     )
 
     plt.title("Brain Structure Percentiles")

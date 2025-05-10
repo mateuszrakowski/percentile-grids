@@ -1,10 +1,9 @@
-import time
 from time import sleep
 
 import streamlit as st
-from grids.engine.deprecated_calculate import reference_bootstrap_percentiles
+from grids.engine.calculate import reference_bootstrap_percentiles
 from engine.visualization import generate_ref_percentiles_plot
-from web_interface.src.db_utils import load_db_data, update_db
+from web_interface.db.db_utils import load_db_data, update_db
 
 
 def update_slider():
