@@ -25,6 +25,7 @@ dependencies = [
     "sqlalchemy>=2.0.40",
     "streamlit>=1.45.0",
     "pydantic>=2.11.4",
+    "rpy2>=3.5.11",
     "scipy>=1.15.3",
 ]
 
