@@ -59,31 +59,14 @@ def create_db_tables(cur: sqlite3.Cursor, sample_dataframe: pd.DataFrame) -> Non
         )
 
 
-def load_db_data(
-    table_name: str,
-    selected_patient: pd.DataFrame = None,
-    min_value: int = 0,
-    max_value: int = 100,
-) -> pd.DataFrame | None:
+def load_db_data(table_name: str) -> pd.DataFrame | None:
     if db_table_missing(table_name):
         return None
 
-    if selected_patient is not None:
-        if min_value > 0:
-            min_value = -min_value
-
-        patient_age = int(selected_patient["AgeYears"].iloc[0])
-        min_value = patient_age + min_value if patient_age > abs(min_value) else 0
-        max_value = patient_age + max_value
-
     engine = sqlalchemy.create_engine("sqlite:///src/grids/reference_dataset.db")
     return pd.read_sql(
-        f"SELECT * FROM {table_name} WHERE AgeYears BETWEEN :min_value AND :max_value",
+        f"SELECT * FROM {table_name}",
         engine,
-        params={
-            "min_value": min_value,
-            "max_value": max_value,
-        },
     )
 
 

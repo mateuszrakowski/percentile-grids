@@ -8,7 +8,20 @@ import rpy2.robjects.packages as rpackages
 from rpy2.rinterface_lib.embedded import RRuntimeError
 from rpy2.robjects import pandas2ri
 from rpy2.robjects.conversion import localconverter
+from rpy2.robjects.vectors import StrVector
 from scipy.stats import norm
+
+# --- 0. Install packages ---
+utils = rpackages.importr("utils")
+utils.chooseCRANmirror(ind=1)
+
+packages_to_install = ["gamlss", "gamlss.dist"]
+packages_to_install = [
+    pkg for pkg in packages_to_install if not rpackages.isinstalled(pkg)
+]
+
+if len(packages_to_install) > 0:
+    utils.install_packages(StrVector(packages_to_install))
 
 # --- 1. Setup rpy2 ---
 pandas2ri.activate()
@@ -36,7 +49,7 @@ except Exception as e:
 # --- 3. Create Sample Data (Using User-Provided Code) ---
 # --- Common Settings ---
 SIZE = 3000  # Sample size
-AGE_VECTOR = np.linspace(0, 100, SIZE)
+AGE_VECTOR = np.linspace(30, 80, SIZE)
 RANDOM_SEED = 42
 np.random.seed(RANDOM_SEED)
 
@@ -272,7 +285,7 @@ try:
     if gamlss_model:
         # --- >>> NEW: Define Out-of-Sample Individual Data <<< ---
         oos_age = 45
-        oos_volume = 1300
+        oos_volume = 9999
         print(f"\n--- Out-of-Sample Individual ---")
         print(f"Age: {oos_age}, Volume: {oos_volume}")
 
