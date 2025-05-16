@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 import rpy2.robjects as robjects
 import rpy2.robjects.packages as rpackages
-from rpy2.rinterface_lib.embedded import RRuntimeError
 from rpy2.robjects import pandas2ri
 from rpy2.robjects.conversion import localconverter
 from scipy.stats import norm
@@ -17,6 +16,7 @@ class GAMLSS:
         data_table: pd.DataFrame,
         x_column: str,
         y_column: list[str] | str,
+        percentiles: list[int] = [5, 10, 25, 50, 75, 90, 95],
         formula_mu: str = "y ~ pb(x)",
         formula_sigma: str = "~ pb(x)",
         formula_nu: str = "~ pb(x)",
@@ -35,6 +35,7 @@ class GAMLSS:
         self.data_table = data_table
         self.x_column = x_column
         self.y_column = y_column
+        self.percentiles = percentiles
 
         # --- 3. Set formula ---
         self.formula_mu = formula_mu
@@ -89,7 +90,7 @@ class GAMLSS:
         self.gamlss_r.wp(self.model)
         self.grDevices.dev_off()
 
-    def calculate_percentiles(self, percentiles: list[float]) -> dict[float, np.array]:
+    def calculate_percentiles(self) -> dict[float, np.array]:
         x_pred_points = np.linspace(
             self.data_table[self.x_column].min(),
             self.data_table[self.x_column].max(),
@@ -112,7 +113,7 @@ class GAMLSS:
         qBCPE = self.gamlss_dist.qBCPE
 
         percentile_curves = {}
-        for p in percentiles:
+        for p in self.percentiles:
             p_curve = qBCPE(p=p, mu=mu_pred, sigma=sigma_pred, nu=nu_pred, tau=tau_pred)
             percentile_curves[p] = np.array(p_curve)
 
@@ -262,3 +263,25 @@ class GAMLSS:
         ax.set_xlim(0, 100)
 
         return fig
+
+    def generate_grids(self):
+        if self.model is None:
+            self.model = self.fit()
+
+        percentile_curves = self.calculate_percentiles()
+        plot_figure = self.plot_percentiles(percentile_curves)
+
+        return plot_figure
+
+    def generate_grids_oos(self, patient_data: pd.DataFrame):
+        if self.model is None:
+            raise Exception("Model has not been trained yet!")
+
+        percentile_curves = self.calculate_percentiles()
+        oos_zscore, oos_percentile = self.predict_patient_oos(patient_data)
+
+        plot_figure = self.plot_oos_patient(
+            patient_data, percentile_curves, oos_zscore, oos_percentile
+        )
+
+        return plot_figure
