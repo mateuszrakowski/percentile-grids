@@ -1,7 +1,9 @@
 import hashlib
 import inspect
+import json
 import os
 import pickle
+from datetime import datetime
 from typing import Any, Callable
 
 
@@ -53,7 +55,7 @@ def generate_cache_key(func, args, kwargs):
     try:
         args_str = str(args)
         kwargs_str = str(sorted(kwargs.items()))
-    except:
+    except Exception:
         args_str = str([str(arg) for arg in args])
         kwargs_str = str([(k, str(v)) for k, v in sorted(kwargs.items())])
 

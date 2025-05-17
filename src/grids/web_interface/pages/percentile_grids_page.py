@@ -5,7 +5,7 @@ import streamlit as st
 from grids.engine.calculate import analyze_patient
 from engine.visualization import create_boxplot, create_data_heatmap
 from web_interface.db.db_utils import load_db_data
-from web_interface.db.process_tables import load_checkbox_dataframe
+from grids.web_interface.db.process_input import load_checkbox_dataframe
 
 
 def update_slider():

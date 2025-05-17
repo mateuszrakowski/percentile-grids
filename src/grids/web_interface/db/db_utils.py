@@ -4,14 +4,14 @@ import sqlite3
 import pandas as pd
 import sqlalchemy
 from streamlit.runtime.uploaded_file_manager import UploadedFile
-from web_interface.db.process_tables import (
+from web_interface.db.process_input import (
     convert_to_dataframes,
     process_csv_input,
     sum_structure_volumes,
 )
 
 
-def init_database(name: str = "src/grids/reference_dataset.db") -> bool:
+def init_database(name: str = "grids/reference_dataset.db") -> bool:
     if not os.path.exists(name):
         conn = sqlite3.connect(name)
         conn.close()
@@ -20,7 +20,7 @@ def init_database(name: str = "src/grids/reference_dataset.db") -> bool:
 def db_table_missing(name: str) -> bool:
     init_database()
 
-    con = sqlite3.connect("src/grids/reference_dataset.db")
+    con = sqlite3.connect("grids/reference_dataset.db")
     cur = con.cursor()
 
     cur.execute(
@@ -63,7 +63,7 @@ def load_db_data(table_name: str) -> pd.DataFrame | None:
     if db_table_missing(table_name):
         return None
 
-    engine = sqlalchemy.create_engine("sqlite:///src/grids/reference_dataset.db")
+    engine = sqlalchemy.create_engine("sqlite:///grids/reference_dataset.db")
     return pd.read_sql(
         f"SELECT * FROM {table_name}",
         engine,

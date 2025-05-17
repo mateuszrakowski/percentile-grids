@@ -3,7 +3,7 @@ from time import sleep
 import streamlit as st
 from engine.calculate import reference_bootstrap_percentiles
 from engine.visualization import generate_ref_percentiles_plot
-from grids.gamlss.gamlss import GAMLSS
+from gamlss.gamlss import GAMLSS
 from web_interface.db.db_utils import load_db_data, update_db
 
 if "uploader_key" not in st.session_state:
@@ -30,9 +30,19 @@ else:
     st.dataframe(current_data)
     st.sidebar.write("Number of patients for current range:", len(current_data))
 
+st.sidebar.divider()
+
 if table_option == "PatientSummary":
     calc_button = st.sidebar.button(
         "Calculate reference percentiles", key="calc_button"
+    )
+
+last_run = GAMLSS.load_run_info()
+
+if last_run:
+    st.sidebar.write(
+        f"Last model was calculated on {last_run['dataset_length']} "
+        f"number of patients at {last_run['timestamp']}"
     )
 
 st.sidebar.divider()
@@ -66,27 +76,27 @@ if table_option == "PatientSummary" and current_data is not None:
     if calc_button:
         with st.spinner("Calculating percentiles..."):
             structure_data = current_data.iloc[:, 6:]
-            # gamlss = GAMLSS()
+            gamlss = GAMLSS()
 
-        #     bootstrap_perc_tables = reference_bootstrap_percentiles(structure_data)
-        #     st.session_state.bootstrap_perc_tables = bootstrap_perc_tables
+            bootstrap_perc_tables = reference_bootstrap_percentiles(structure_data)
+            st.session_state.bootstrap_perc_tables = bootstrap_perc_tables
 
-        # if st.session_state.structure_names:
-        #     structure_tabs = st.tabs(st.session_state.structure_names)
+        if st.session_state.structure_names:
+            structure_tabs = st.tabs(st.session_state.structure_names)
 
-        #     # Display tables if they've been calculated
-        #     if st.session_state.bootstrap_perc_tables is not None:
-        #         for tab, table in zip(
-        #             structure_tabs, st.session_state.bootstrap_perc_tables
-        #         ):
-        #             with tab:
-        #                 col1, col2 = st.columns(2)
+            # Display tables if they've been calculated
+            if st.session_state.bootstrap_perc_tables is not None:
+                for tab, table in zip(
+                    structure_tabs, st.session_state.bootstrap_perc_tables
+                ):
+                    with tab:
+                        col1, col2 = st.columns(2)
 
-        #                 with col1:
-        #                     st.dataframe(table, use_container_width=True)
+                        with col1:
+                            st.dataframe(table, use_container_width=True)
 
-        #                 with col2:
-        #                     st.pyplot(
-        #                         generate_ref_percentiles_plot(table),
-        #                         use_container_width=True,
-        #                     )
+                        with col2:
+                            st.pyplot(
+                                generate_ref_percentiles_plot(table),
+                                use_container_width=True,
+                            )

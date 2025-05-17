@@ -1,4 +1,6 @@
+import json
 import os
+from datetime import datetime
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -45,25 +47,44 @@ class GAMLSS:
 
         # --- 4. Set model ---
         self.model_path = os.path.abspath(model_path)
-        self.model = self._initialize_model(self.model_path)
+        self.model = self._initialize_model()
 
     def _convert_table_to_r(self, table: pd.DataFrame) -> robjects.DataFrame:
         with localconverter(robjects.default_converter + pandas2ri.converter):
             return robjects.conversion.py2rpy(table)
 
-    def _initialize_model(self, model_path: str) -> robjects.vectors.ListVector | None:
-        if os.path.exists(model_path):
-            try:
-                readRDS = self.base.readRDS
-                gamlss_model = readRDS(model_path)
-            except Exception:
-                return None
+    def _initialize_model(self) -> robjects.vectors.ListVector | None:
+        gamlss_model = None
+
+        if os.path.exists(self.model_path):
+            readRDS = self.base.readRDS
+            gamlss_model = readRDS(self.model_path)
 
         return gamlss_model
 
     def _save_model(self) -> None:
         save_rds = self.base.saveRDS
         save_rds(self.model, file=self.model_path)
+
+    def _save_run_info(self, filename: str = "grids/.cache/run_stats.json") -> None:
+        now = datetime.now()
+        timestamp_str = now.isoformat()
+
+        data_to_save = {
+            "dataset_length": len(self.data_table),
+            "timestamp": timestamp_str,
+        }
+
+        with open(filename, "w") as f:
+            json.dump(data_to_save, f)
+
+    @staticmethod
+    def load_run_info(filename: str = "grids/.cache/run_stats.json") -> None:
+        if os.path.exists(filename):
+            with open(filename, "r") as f:
+                data = json.load(f)
+                return data
+        return None
 
     def fit(self) -> None:
         r_table = self._convert_table_to_r(self.data_table)
@@ -79,6 +100,7 @@ class GAMLSS:
         )
 
         self._save_model()
+        self._save_run_info()
 
     def calculate_bic(self) -> float:
         bic_r_object = self.stats.BIC(self.model)
