@@ -6,10 +6,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import rpy2.robjects as robjects
-import rpy2.robjects.packages as rpackages
+from gamlss.r_singleton import REnvironment
 from rpy2.robjects import pandas2ri
 from rpy2.robjects.conversion import localconverter
 from scipy.stats import norm
+
+r_env = REnvironment()
 
 
 class GAMLSS:
@@ -17,21 +19,21 @@ class GAMLSS:
         self,
         data_table: pd.DataFrame,
         x_column: str,
-        y_column: list[str] | str,
-        percentiles: list[int] = [5, 10, 25, 50, 75, 90, 95],
-        formula_mu: str = "y ~ pb(x)",
-        formula_sigma: str = "~ pb(x)",
-        formula_nu: str = "~ pb(x)",
-        formula_tau: str = "~ 1",
-        model_path: str = "src/grids/gamlss/gamlss_model_BCPE.rds",
+        y_column: str,
+        formula_mu: str = "pb",
+        formula_sigma: str = "pb",
+        formula_nu: str = "pb",
+        formula_tau: str = "1",
+        percentiles: list[int] = [0.05, 0.10, 0.25, 0.50, 0.75, 0.90, 0.95],
+        model_path: str = "src/grids/gamlss/models/",
     ):
-        # --- 1. Setup rpy2 ---
-        pandas2ri.activate()
-        self.base = rpackages.importr("base")
-        self.stats = rpackages.importr("stats")
-        self.grDevices = rpackages.importr("grDevices")
-        self.gamlss_r = rpackages.importr("gamlss")
-        self.gamlss_dist = rpackages.importr("gamlss.dist")
+        # # --- 1. Setup rpy2 ---
+        # pandas2ri.activate()
+        self.base = REnvironment().base
+        self.stats = REnvironment().stats
+        self.grDevices = REnvironment().gr_devices
+        self.gamlss_r = REnvironment().gamlss_r
+        self.gamlss_dist = REnvironment().gamlss_dist
 
         # --- 2. Set data ---
         self.data_table = data_table
@@ -40,13 +42,15 @@ class GAMLSS:
         self.percentiles = percentiles
 
         # --- 3. Set formula ---
-        self.formula_mu = formula_mu
-        self.formula_sigma = formula_sigma
-        self.formula_nu = formula_nu
-        self.formula_tau = formula_tau
+        self.formula_mu = robjects.Formula(
+            f"{self.y_column} ~ {formula_mu}({self.x_column})"
+        )
+        self.formula_sigma = robjects.Formula(f"~ {formula_sigma}({self.x_column})")
+        self.formula_nu = robjects.Formula(f"~ {formula_nu}({self.x_column})")
+        self.formula_tau = robjects.Formula(f"~ {formula_tau}")
 
         # --- 4. Set model ---
-        self.model_path = os.path.abspath(model_path)
+        self.model_path = os.path.abspath(model_path + f"gamlss_{self.y_column}.rds")
         self.model = self._initialize_model()
 
     def _convert_table_to_r(self, table: pd.DataFrame) -> robjects.DataFrame:
@@ -63,12 +67,20 @@ class GAMLSS:
         return gamlss_model
 
     def _save_model(self) -> None:
+        if not os.path.exists(self.model_path):
+            os.makedirs(os.path.dirname(self.model_path), exist_ok=True)
+
         save_rds = self.base.saveRDS
         save_rds(self.model, file=self.model_path)
 
-    def _save_run_info(self, filename: str = "grids/.cache/run_stats.json") -> None:
+    def _save_run_info(
+        self, filename: str = "src/grids/gamlss/models/run_stats.json"
+    ) -> None:
+        if not os.path.exists(filename):
+            os.makedirs(os.path.dirname(filename), exist_ok=True)
+
         now = datetime.now()
-        timestamp_str = now.isoformat()
+        timestamp_str = now.strftime("%Y-%m-%d %H:%M:%S")
 
         data_to_save = {
             "dataset_length": len(self.data_table),
@@ -79,7 +91,7 @@ class GAMLSS:
             json.dump(data_to_save, f)
 
     @staticmethod
-    def load_run_info(filename: str = "grids/.cache/run_stats.json") -> None:
+    def load_run_info(filename: str = "src/grids/gamlss/models/run_stats.json") -> None:
         if os.path.exists(filename):
             with open(filename, "r") as f:
                 data = json.load(f)
@@ -124,7 +136,7 @@ class GAMLSS:
         )
 
         pred_params = self.gamlss_r.predictAll(
-            self.model, newdata=df_pred_r, type="response"
+            object=self.model, newdata=df_pred_r, type="response"
         )
 
         mu_pred = np.array(pred_params.rx2("mu"))
@@ -186,9 +198,9 @@ class GAMLSS:
                 linewidth=linewidth,
             )
 
-        ax.set_xlabel("x")
-        ax.set_ylabel("y")
-        ax.set_title("GAMLSS Model Fit (BCPE) on User-Provided Data")
+        ax.set_xlabel("Age")
+        ax.set_ylabel("Volume")
+        ax.set_title(f"{self.y_column}")
         ax.legend(fontsize=9)
         ax.grid(True, alpha=0.3)
         plot_min_y = np.percentile(self.data_table[self.y_column], 1)
@@ -288,7 +300,7 @@ class GAMLSS:
 
     def generate_grids(self):
         if self.model is None:
-            self.model = self.fit()
+            self.fit()
 
         percentile_curves = self.calculate_percentiles()
         plot_figure = self.plot_percentiles(percentile_curves)

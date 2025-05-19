@@ -1,9 +1,7 @@
 import hashlib
 import inspect
-import json
 import os
 import pickle
-from datetime import datetime
 from typing import Any, Callable
 
 
@@ -62,3 +60,13 @@ def generate_cache_key(func, args, kwargs):
     key_string = f"{func_id}:{source_code}:{args_str}:{kwargs_str}"
 
     return hashlib.md5(key_string.encode("utf-8")).hexdigest()
+
+
+def clear_cache(cache_dir: str = ".cache"):
+    for file in os.listdir(cache_dir):
+        os.remove(os.path.join(cache_dir, file))
+
+
+def clear_model_cache(model_path: str = "src/grids/gamlss/models/"):
+    for file in os.listdir(model_path):
+        os.remove(os.path.join(model_path, file))

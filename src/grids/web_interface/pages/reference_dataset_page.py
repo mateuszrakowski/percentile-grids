@@ -1,15 +1,15 @@
+import math
 from time import sleep
 
 import streamlit as st
-from engine.calculate import reference_bootstrap_percentiles
-from engine.visualization import generate_ref_percentiles_plot
+from engine.data_cache import clear_model_cache
 from gamlss.gamlss import GAMLSS
 from web_interface.db.db_utils import load_db_data, update_db
 
 if "uploader_key" not in st.session_state:
     st.session_state["uploader_key"] = 1
-if "bootstrap_perc_tables" not in st.session_state:
-    st.session_state.bootstrap_perc_tables = None
+if "gamlss_reference_plots" not in st.session_state:
+    st.session_state.gamlss_reference_plots = None
 if "structure_names" not in st.session_state:
     st.session_state.structure_names = None
 
@@ -34,16 +34,23 @@ st.sidebar.divider()
 
 if table_option == "PatientSummary":
     calc_button = st.sidebar.button(
-        "Calculate reference percentiles", key="calc_button"
+        "Calculate reference percentiles", key="calc_button", icon="🧮"
     )
 
 last_run = GAMLSS.load_run_info()
 
 if last_run:
     st.sidebar.write(
-        f"Last model was calculated on {last_run['dataset_length']} "
-        f"number of patients at {last_run['timestamp']}"
+        f"Last model was calculated on: {last_run['dataset_length']} "
+        f"patients at {last_run['timestamp']}."
     )
+
+    if st.sidebar.button("Clear model", type="primary"):
+        clear_model_cache()
+        st.success("Models removed successfully!")
+        st.session_state.gamlss_reference_plots = None
+        sleep(1.5)
+        st.rerun()
 
 st.sidebar.divider()
 
@@ -54,7 +61,7 @@ uploaded_files = st.sidebar.file_uploader(
     key=st.session_state["uploader_key"],
 )
 
-if st.sidebar.button("Send data to the database"):
+if st.sidebar.button("Send data to the database", icon="🚀"):
     if not uploaded_files:
         st.warning("Please select CSV files first.")
     else:
@@ -74,29 +81,36 @@ if table_option == "PatientSummary" and current_data is not None:
     st.session_state.structure_names = structure_names
 
     if calc_button:
-        with st.spinner("Calculating percentiles..."):
-            structure_data = current_data.iloc[:, 6:]
-            gamlss = GAMLSS()
+        structure_data = current_data.iloc[:, 6:]
+        progress_bar = st.progress(0)
 
-            bootstrap_perc_tables = reference_bootstrap_percentiles(structure_data)
-            st.session_state.bootstrap_perc_tables = bootstrap_perc_tables
+        gamlss_reference_plots = []
+        for i, col in enumerate(structure_data.columns):
+            progress_bar.progress(
+                i + 1, text=f"Fitting model {i+1} for structure {col}..."
+            )
 
-        if st.session_state.structure_names:
-            structure_tabs = st.tabs(st.session_state.structure_names)
+            gamlss = GAMLSS(current_data, "AgeYears", col)
+            gamlss_reference_plots.append(gamlss.generate_grids())
 
-            # Display tables if they've been calculated
-            if st.session_state.bootstrap_perc_tables is not None:
-                for tab, table in zip(
-                    structure_tabs, st.session_state.bootstrap_perc_tables
-                ):
-                    with tab:
-                        col1, col2 = st.columns(2)
+        progress_bar.empty()
+        st.session_state.gamlss_reference_plots = gamlss_reference_plots
+        st.success("Reference percentiles successfully calculated!", icon="✅")
 
-                        with col1:
-                            st.dataframe(table, use_container_width=True)
+        sleep(1.5)
+        st.rerun()
 
-                        with col2:
-                            st.pyplot(
-                                generate_ref_percentiles_plot(table),
-                                use_container_width=True,
-                            )
+    if st.session_state.gamlss_reference_plots is not None:
+        col1, col2 = st.columns(2)
+        half_plots = math.ceil(len(st.session_state.structure_names) / 2)
+
+        if st.session_state.gamlss_reference_plots is not None:
+            col1_plots = st.session_state.gamlss_reference_plots[:half_plots]
+            col2_plots = st.session_state.gamlss_reference_plots[half_plots:]
+
+            with col1:
+                for plot in col1_plots:
+                    st.pyplot(plot, use_container_width=False)
+            with col2:
+                for plot in col2_plots:
+                    st.pyplot(plot, use_container_width=False)
