@@ -175,5 +175,4 @@ cython_debug/
 src/grids/reference_dataset.db
 
 # Models
-src/grids/gamlss/models/*.rds
-src/grids/gamlss/models/*.json
+src/grids/gamlss/models/

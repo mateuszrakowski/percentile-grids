@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from datetime import datetime
 
 import matplotlib.pyplot as plt
@@ -91,6 +92,10 @@ class GAMLSS:
             json.dump(data_to_save, f)
 
     @staticmethod
+    def _split_structure_name(structure_name: str) -> str:
+        return re.sub(r"(?<!^)(?=[A-Z])", " ", structure_name)
+
+    @staticmethod
     def load_run_info(filename: str = "src/grids/gamlss/models/run_stats.json") -> None:
         if os.path.exists(filename):
             with open(filename, "r") as f:
@@ -153,7 +158,7 @@ class GAMLSS:
 
         return percentile_curves
 
-    def predict_patient_oos(self, patient_data: pd.DataFrame):
+    def predict_patient_oos(self, patient_data: pd.DataFrame) -> tuple[float, float]:
         oos_zscore = None
         oos_percentile = None
 
@@ -162,7 +167,11 @@ class GAMLSS:
         y_value_r = robjects.FloatVector([patient_data[self.y_column].values[0]])
 
         zscore_result_r = centiles_pred_func(
-            self.model, x=x_value_r, y=y_value_r, type="zscore", xname=self.x_column
+            self.model,
+            xvalues=x_value_r,
+            yval=y_value_r,
+            type="z-scores",
+            xname=self.x_column,
         )
 
         oos_zscore = np.array(zscore_result_r)[0]
@@ -200,7 +209,7 @@ class GAMLSS:
 
         ax.set_xlabel("Age")
         ax.set_ylabel("Volume")
-        ax.set_title(f"{self.y_column}")
+        ax.set_title(self._split_structure_name(self.y_column))
         ax.legend(fontsize=9)
         ax.grid(True, alpha=0.3)
         plot_min_y = np.percentile(self.data_table[self.y_column], 1)
@@ -216,7 +225,7 @@ class GAMLSS:
         percentile_curves: dict[float, np.array],
         oos_zscore,
         oos_percentile,
-    ):
+    ) -> plt.Figure:
         fig, ax = plt.subplots(figsize=(12, 7))
 
         for p, curve_data in percentile_curves.items():
@@ -257,14 +266,14 @@ class GAMLSS:
             s=80,
             zorder=5,
             label=(
-                f"OOS Individual (Age={patient_data[self.x_column].values[0]}, "
+                f"Patient (Age={patient_data[self.x_column].values[0]}, "
                 f"Vol={patient_data[self.y_column].values[0]})"
             ),
         )
 
         if oos_percentile:
             ax.annotate(
-                f" P{oos_percentile*100:.1f}\n (Z={oos_zscore:.2f})",
+                f" P {oos_percentile*100:.1f}\n (Z={oos_zscore:.2f})",
                 (
                     patient_data[self.x_column].values[0],
                     patient_data[self.y_column].values[0],
@@ -279,10 +288,7 @@ class GAMLSS:
 
         ax.set_xlabel("Age")
         ax.set_ylabel("Volume")
-        ax.set_title(
-            f"GAMLSS Model (BCPE) trained on {min(self.data_table[self.x_column])}-"
-            f"{max(self.data_table[self.x_column])} yrs: OOS Patient"
-        )
+        ax.set_title(self._split_structure_name(self.y_column))
         ax.legend(fontsize=9)
         ax.grid(True, alpha=0.3)
         plot_min_y = min(
@@ -298,7 +304,7 @@ class GAMLSS:
 
         return fig
 
-    def generate_grids(self):
+    def generate_grids(self) -> plt.Figure:
         if self.model is None:
             self.fit()
 
@@ -307,7 +313,7 @@ class GAMLSS:
 
         return plot_figure
 
-    def generate_grids_oos(self, patient_data: pd.DataFrame):
+    def generate_grids_oos(self, patient_data: pd.DataFrame) -> plt.Figure:
         if self.model is None:
             raise Exception("Model has not been trained yet!")
 

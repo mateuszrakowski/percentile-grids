@@ -42,7 +42,7 @@ last_run = GAMLSS.load_run_info()
 if last_run:
     st.sidebar.write(
         f"Last model was calculated on: {last_run['dataset_length']} "
-        f"patients at {last_run['timestamp']}."
+        f"data samples at {last_run['timestamp']}."
     )
 
     if st.sidebar.button("Clear model", type="primary"):
@@ -104,13 +104,12 @@ if table_option == "PatientSummary" and current_data is not None:
         col1, col2 = st.columns(2)
         half_plots = math.ceil(len(st.session_state.structure_names) / 2)
 
-        if st.session_state.gamlss_reference_plots is not None:
-            col1_plots = st.session_state.gamlss_reference_plots[:half_plots]
-            col2_plots = st.session_state.gamlss_reference_plots[half_plots:]
+        col1_plots = st.session_state.gamlss_reference_plots[:half_plots]
+        col2_plots = st.session_state.gamlss_reference_plots[half_plots:]
 
-            with col1:
-                for plot in col1_plots:
-                    st.pyplot(plot, use_container_width=False)
-            with col2:
-                for plot in col2_plots:
-                    st.pyplot(plot, use_container_width=False)
+        with col1:
+            for plot in col1_plots:
+                st.pyplot(plot, use_container_width=False)
+        with col2:
+            for plot in col2_plots:
+                st.pyplot(plot, use_container_width=False)
