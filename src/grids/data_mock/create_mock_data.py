@@ -6,7 +6,7 @@ import pandas as pd
 
 
 def create_mock():
-    df = pd.read_csv("grids/data_mock/original_mock.csv",header=None, index_col=0).T
+    df = pd.read_csv("src/grids/data_mock/original_mock.csv")
 
     # Set new name
     first_names = ["John", "Jane", "Bob", "Alice", "Mark", "Emily"]
@@ -37,7 +37,7 @@ def create_mock():
 
     # Set new volume values with 5% maximum change
     for row in df[7:].itertuples():
-        five_percent = float(df.loc[row.Index, "Unnamed: 2"]) * 0.05
+        five_percent = float(df.loc[row.Index, "Unnamed: 2"]) * 0.15
         new_value = float(df.loc[row.Index, "Unnamed: 2"]) + random.uniform(
             -five_percent, five_percent
         )
@@ -45,15 +45,15 @@ def create_mock():
         df.loc[row.Index, "Unnamed: 2"] = round(new_value, 3)
 
     # Save file
-    if not os.path.exists("grids/data_mock/artifical_reference_dataset"):
-        os.makedirs("grids/data_mock/artifical_reference_dataset")
+    if not os.path.exists("src/grids/data_mock/artifical_reference_dataset"):
+        os.makedirs("src/grids/data_mock/artifical_reference_dataset")
 
     df.to_csv(
-        f"grids/data_mock/artifical_reference_dataset/{name}_{df.loc[1, name]}.csv",
+        f"src/grids/data_mock/artifical_reference_dataset/{name}_{df.loc[1, name]}.csv",
         index=False,
     )
 
 
 if __name__ == "__main__":
-    for i in range(100):
+    for i in range(200):
         create_mock()
