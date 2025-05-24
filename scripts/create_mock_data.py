@@ -6,7 +6,7 @@ import pandas as pd
 
 
 def create_mock():
-    df = pd.read_csv("src/grids/data_mock/original_mock.csv")
+    df = pd.read_csv("scripts/original_mock.csv")
 
     # Set new name
     first_names = ["John", "Jane", "Bob", "Alice", "Mark", "Emily"]
@@ -45,15 +45,15 @@ def create_mock():
         df.loc[row.Index, "Unnamed: 2"] = round(new_value, 3)
 
     # Save file
-    if not os.path.exists("src/grids/data_mock/artifical_reference_dataset"):
-        os.makedirs("src/grids/data_mock/artifical_reference_dataset")
+    if not os.path.exists("scripts/data_mock"):
+        os.makedirs("scripts/data_mock")
 
     df.to_csv(
-        f"src/grids/data_mock/artifical_reference_dataset/{name}_{df.loc[1, name]}.csv",
+        f"scripts/data_mock/{name}_{df.loc[1, name]}.csv",
         index=False,
     )
 
 
 if __name__ == "__main__":
-    for i in range(200):
+    for i in range(1):
         create_mock()

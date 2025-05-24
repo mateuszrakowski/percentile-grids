@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from engine.data_cache import disk_cache
-from web_interface.db.db_utils import load_db_data
+from db.db_utils import load_db_data
 
 PERCENTILES = [5, 10, 25, 50, 75, 90, 95]
 

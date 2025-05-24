@@ -171,11 +171,6 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-# Database
-src/grids/reference_dataset.db
-
-# Models
-src/grids/gamlss/models/
-
-# Data mock
-src/grids/data_mock/artifical_reference_dataset/
+# Directory with database and models
+data/
+scripts/data_mock/

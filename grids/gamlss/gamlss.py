@@ -26,7 +26,7 @@ class GAMLSS:
         formula_nu: str = "pb",
         formula_tau: str = "1",
         percentiles: list[int] = [0.05, 0.10, 0.25, 0.50, 0.75, 0.90, 0.95],
-        model_path: str = "src/grids/gamlss/models/",
+        model_path: str = "/data/models/",
     ):
         # # --- 1. Setup rpy2 ---
         # pandas2ri.activate()
@@ -75,7 +75,7 @@ class GAMLSS:
         save_rds(self.model, file=self.model_path)
 
     def _save_run_info(
-        self, filename: str = "src/grids/gamlss/models/run_stats.json"
+        self, filename: str = "/data/models/run_stats.json"
     ) -> None:
         if not os.path.exists(filename):
             os.makedirs(os.path.dirname(filename), exist_ok=True)
@@ -96,7 +96,7 @@ class GAMLSS:
         return re.sub(r"(?<!^)(?=[A-Z])", " ", structure_name)
 
     @staticmethod
-    def load_run_info(filename: str = "src/grids/gamlss/models/run_stats.json") -> None:
+    def load_run_info(filename: str = "/data/models/run_stats.json") -> None:
         if os.path.exists(filename):
             with open(filename, "r") as f:
                 data = json.load(f)

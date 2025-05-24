@@ -3,9 +3,9 @@ from time import sleep
 
 import pandas as pd
 import streamlit as st
+from db.db_utils import load_db_data
+from db.process_input import load_checkbox_dataframe
 from gamlss.gamlss import GAMLSS
-from web_interface.db.db_utils import load_db_data
-from web_interface.db.process_input import load_checkbox_dataframe
 
 
 def handle_selection():
@@ -130,8 +130,8 @@ if st.session_state["patient_table"] is not None and selected_df.shape[0] == 1:
     ):
         st.header(f"Patient {st.session_state.calculated_patient}")
         st.write(
-            f"GAMLSS Model (BCPE) trained on samples from {min(ref_dataset["AgeYears"])}"
-            f" - {max(ref_dataset["AgeYears"])} years."
+            f"GAMLSS Model (BCPE) trained on samples from "
+            f"{min(ref_dataset["AgeYears"])} - {max(ref_dataset["AgeYears"])} years."
         )
 
         col1, col2 = st.columns(2)

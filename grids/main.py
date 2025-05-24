@@ -6,11 +6,11 @@ st.set_page_config(layout="wide")
 pg = st.navigation(
     [
         st.Page(
-            page="web_interface/pages/reference_dataset_page.py",
+            page="web_interface/reference_dataset_page.py",
             title="Reference dataset",
         ),
         st.Page(
-            page="web_interface/pages/percentile_grids_page.py",
+            page="web_interface/percentile_grids_page.py",
             title="Percentile grids",
         ),
     ]

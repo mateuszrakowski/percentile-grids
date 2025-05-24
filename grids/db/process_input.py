@@ -2,7 +2,7 @@ from io import StringIO
 
 import pandas as pd
 from streamlit.runtime.uploaded_file_manager import UploadedFile
-from web_interface.db.data_structures import (
+from db.data_structures import (
     CerebralCerebellumCortex,
     CerebralCortex,
     CerebrospinalFluidTotal,

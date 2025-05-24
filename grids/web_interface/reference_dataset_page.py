@@ -4,7 +4,7 @@ from time import sleep
 import streamlit as st
 from engine.data_cache import clear_model_cache
 from gamlss.gamlss import GAMLSS
-from web_interface.db.db_utils import load_db_data, update_db
+from db.db_utils import load_db_data, update_db
 
 if "uploader_key" not in st.session_state:
     st.session_state["uploader_key"] = 1
