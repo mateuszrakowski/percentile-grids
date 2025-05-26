@@ -66,10 +66,18 @@ if st.session_state["patient_table"] is not None:
 
 
 ref_dataset = load_db_data("PatientSummary")
-st.sidebar.write(
-    "Number of patients in database:",
-    len(ref_dataset),
-)
+
+if ref_dataset is None:
+    st.warning(
+        "The reference database is empty! Please navigate to the "
+        "'Reference dataset' page and upload a CSV files to start.",
+        icon="⚠️",
+    )
+else:
+    st.sidebar.write(
+        "Number of patients in database:",
+        len(ref_dataset),
+    )
 
 uploaded_files = st.sidebar.file_uploader(
     "Send patients for calculations:",
@@ -95,7 +103,11 @@ if st.sidebar.button("Send data", icon="🚀"):
 
 st.divider()
 
-if st.session_state["patient_table"] is not None and calc_button:
+if (
+    st.session_state["patient_table"] is not None
+    and calc_button
+    and ref_dataset is not None
+):
     if len(selected_indices) == 1:
         st.session_state.calculated_patient = selected_df.PatientID.iloc[0]
         st.session_state.structure_names = list(ref_dataset.columns[6:])
