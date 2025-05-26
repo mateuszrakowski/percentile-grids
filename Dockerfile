@@ -4,8 +4,6 @@ FROM rocker/r-ubuntu:24.04
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN add-apt-repository ppa:deadsnakes/ppa -y
-
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     software-properties-common \
@@ -13,7 +11,7 @@ RUN apt-get update && apt-get install -y \
     && add-apt-repository ppa:deadsnakes/ppa -y \
     && apt-get update && apt-get install -y \
     python3.10 \
-    python3.10-pip \
+    python3-pip \
     python3.10-dev \
     python3.10-venv \
     python3.10-distutils \
@@ -33,7 +31,6 @@ RUN apt-get update && apt-get install -y \
 
 # Create symlinks to make python3.10 the default python3
 RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1
-RUN update-alternatives --install /usr/bin/pip3 pip3 /usr/bin/pip3.10 1
 
 # Create and activate a virtual environment using Python 3.10
 RUN python3.10 -m venv /opt/venv
