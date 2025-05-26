@@ -88,7 +88,7 @@ def update_db(input_files: list[UploadedFile]) -> None:
     cur.executemany(
         (
             f"INSERT INTO PatientStructures VALUES "
-            f"({", ".join((f":{col}" for col in processed_dataframe.columns))})"
+            f"({', '.join((f':{col}' for col in processed_dataframe.columns))})"
         ),
         structures_data,
     )
@@ -96,7 +96,7 @@ def update_db(input_files: list[UploadedFile]) -> None:
     cur.executemany(
         (
             f"INSERT INTO PatientSummary VALUES "
-            f"({", ".join((f":{col}" for col in structures_summary.columns))})"
+            f"({', '.join((f':{col}' for col in structures_summary.columns))})"
         ),
         summary_data,
     )
