@@ -8,10 +8,15 @@ RUN add-apt-repository ppa:deadsnakes/ppa -y
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
+    software-properties-common \
+    gpg-agent \
+    && add-apt-repository ppa:deadsnakes/ppa -y \
+    && apt-get update && apt-get install -y \
     python3.10 \
     python3.10-pip \
     python3.10-dev \
     python3.10-venv \
+    python3.10-distutils \
     build-essential \
     gfortran \
     libcurl4-openssl-dev \
