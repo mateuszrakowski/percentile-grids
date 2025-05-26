@@ -131,7 +131,7 @@ if st.session_state["patient_table"] is not None and selected_df.shape[0] == 1:
         st.header(f"Patient {st.session_state.calculated_patient}")
         st.write(
             f"GAMLSS Model (BCPE) trained on samples from "
-            f"{min(ref_dataset["AgeYears"])} - {max(ref_dataset["AgeYears"])} years."
+            f"{min(ref_dataset['AgeYears'])} - {max(ref_dataset['AgeYears'])} years."
         )
 
         col1, col2 = st.columns(2)
