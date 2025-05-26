@@ -6,10 +6,10 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    python3 \
-    python3-pip \
-    python3-dev \
-    python3.12-venv \
+    python3.10 \
+    python3.10-pip \
+    python3.10-dev \
+    python3.10-venv \
     build-essential \
     gfortran \
     libcurl4-openssl-dev \
@@ -24,8 +24,12 @@ RUN apt-get update && apt-get install -y \
     libjpeg-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Create and activate a virtual environment
-RUN python3 -m venv /opt/venv
+# Create symlinks to make python3.10 the default python3
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1
+RUN update-alternatives --install /usr/bin/pip3 pip3 /usr/bin/pip3.10 1
+
+# Create and activate a virtual environment using Python 3.10
+RUN python3.10 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 # Install Python packages
@@ -51,7 +55,7 @@ ENV STREAMLIT_SERVER_ADDRESS=0.0.0.0
 # Disable file watching
 ENV STREAMLIT_SERVER_FILE_WATCHER_TYPE=none
 
-RUN mkdir -p /app/data /app/data/models
+RUN mkdir -p /data /data/models
 
 # Command to run Streamlit app
 CMD ["streamlit", "run", "grids/main.py", "--server.port=8080", "--server.address=0.0.0.0"]
