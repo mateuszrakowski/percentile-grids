@@ -4,6 +4,8 @@ FROM rocker/r-ubuntu:24.04
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
 
+RUN add-apt-repository ppa:deadsnakes/ppa -y
+
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     python3.10 \
