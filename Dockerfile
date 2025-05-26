@@ -42,11 +42,16 @@ WORKDIR /app
 COPY . .
 
 # Expose Streamlit port
-EXPOSE 8501
+EXPOSE 8080
 
 # Set environment variables for Streamlit
-ENV STREAMLIT_SERVER_PORT=8501
+ENV STREAMLIT_SERVER_PORT=8080
 ENV STREAMLIT_SERVER_ADDRESS=0.0.0.0
 
+# Disable file watching
+ENV STREAMLIT_SERVER_FILE_WATCHER_TYPE=none
+
+RUN mkdir -p /app/data /app/data/models
+
 # Command to run Streamlit app
-# CMD ["streamlit", "run", "grids/main.py", "--server.port=8501", "--server.address=0.0.0.0"]
+CMD ["streamlit", "run", "grids/main.py", "--server.port=8080", "--server.address=0.0.0.0"]
