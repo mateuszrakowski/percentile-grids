@@ -11,7 +11,7 @@ from db.process_input import (
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 
 
-def init_database(name: str = "/data/reference_dataset.db") -> bool:
+def init_database(name: str = "/app/data/reference_dataset.db") -> bool:
     if not os.path.exists(name):
         conn = sqlite3.connect(name)
         conn.close()
@@ -20,7 +20,7 @@ def init_database(name: str = "/data/reference_dataset.db") -> bool:
 def db_table_missing(name: str) -> bool:
     init_database()
 
-    con = sqlite3.connect("/data/reference_dataset.db")
+    con = sqlite3.connect("/app/data/reference_dataset.db")
     cur = con.cursor()
 
     cur.execute(
@@ -63,7 +63,7 @@ def load_db_data(table_name: str) -> pd.DataFrame | None:
     if db_table_missing(table_name):
         return None
 
-    engine = sqlalchemy.create_engine("sqlite:////data/reference_dataset.db")
+    engine = sqlalchemy.create_engine("sqlite:////app/data/reference_dataset.db")
     with engine.connect() as conn:
         return pd.read_sql_table(table_name, conn)
 
@@ -71,7 +71,7 @@ def load_db_data(table_name: str) -> pd.DataFrame | None:
 def update_db(input_files: list[UploadedFile]) -> None:
     dataframes = convert_to_dataframes(input_files)
 
-    con = sqlite3.connect("/data/reference_dataset.db")
+    con = sqlite3.connect("/app/data/reference_dataset.db")
     cur = con.cursor()
 
     create_db_tables(cur, dataframes[0])

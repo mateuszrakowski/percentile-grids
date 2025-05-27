@@ -67,6 +67,6 @@ def clear_cache(cache_dir: str = ".cache"):
         os.remove(os.path.join(cache_dir, file))
 
 
-def clear_model_cache(model_path: str = "/data/models/"):
+def clear_model_cache(model_path: str = "/app/data/models/"):
     for file in os.listdir(model_path):
         os.remove(os.path.join(model_path, file))

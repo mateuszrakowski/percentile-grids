@@ -59,7 +59,5 @@ ENV STREAMLIT_SERVER_ADDRESS=0.0.0.0
 # Disable file watching
 ENV STREAMLIT_SERVER_FILE_WATCHER_TYPE=none
 
-RUN mkdir -p /data /data/models
-
 # Command to run Streamlit app
 CMD ["streamlit", "run", "grids/main.py", "--server.port=8080", "--server.address=0.0.0.0"]
