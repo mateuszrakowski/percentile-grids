@@ -27,6 +27,7 @@ dependencies = [
     "pydantic>=2.11.4",
     "rpy2>=3.5.1",
     "scipy>=1.15.3",
+    "openpyxl>=3.1.5",
 ]
 
 [project.urls]
