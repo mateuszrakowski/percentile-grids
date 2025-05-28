@@ -1,7 +1,6 @@
 from io import StringIO
 
 import pandas as pd
-from streamlit.runtime.uploaded_file_manager import UploadedFile
 from db.data_structures import (
     CerebralCerebellumCortex,
     CerebralCortex,
@@ -13,6 +12,7 @@ from db.data_structures import (
     WhiteMatterCerebral,
     WhiteMatterTotal,
 )
+from streamlit.runtime.uploaded_file_manager import UploadedFile
 
 
 def process_csv_input(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -104,7 +104,15 @@ def sum_structure_volumes(structures_df: pd.DataFrame) -> pd.DataFrame:
 
 
 def convert_to_dataframes(input_files: list[UploadedFile]) -> list[pd.DataFrame]:
-    return [pd.read_csv(StringIO(file.read().decode("utf-8"))) for file in input_files]
+    dataframes = []
+    for file in input_files:
+        if file.name.endswith(".csv"):
+            dataframes.append(pd.read_csv(file))
+        elif file.name.endswith((".xlsx", ".xls")):
+            dataframes.append(pd.read_excel(file))
+        else:
+            raise ValueError("Unsupported file format")
+    return dataframes
 
 
 def load_checkbox_dataframe(
