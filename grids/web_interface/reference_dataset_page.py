@@ -2,9 +2,11 @@ import math
 from time import sleep
 
 import streamlit as st
-from engine.data_cache import clear_model_cache
-from gamlss.gamlss import GAMLSS
-from db.db_utils import load_db_data, update_db
+from data_processing.db_utils import load_db_data, update_db
+from engine.model import GAMLSS
+from engine.selector import GAMLSSModelSelector
+from resources.model_candidates import MODEL_CANDIDATES
+from utils.data_cache import clear_model_cache
 
 if "uploader_key" not in st.session_state:
     st.session_state["uploader_key"] = 1
@@ -37,13 +39,18 @@ if table_option == "PatientSummary":
         "Calculate reference percentiles", key="calc_button", icon="🧮"
     )
 
-last_run = GAMLSS.load_run_info()
+last_run = GAMLSS.load_run_info(
+    "/app/data/models/gamlss_CerebralCerebellumCortex_run_info.json"
+)
 
 if last_run:
-    st.sidebar.write(
-        f"Last model was calculated on: {last_run['dataset_length']} "
-        f"data samples at {last_run['timestamp']}."
-    )
+    markdown_text = f"""
+    Calculated model metadata:
+    - **Dataset length**: {last_run["dataset_length"]}
+    - **Date**: {last_run["timestamp"]}
+    """
+
+    st.sidebar.markdown(markdown_text)
 
     if st.sidebar.button("Clear model", type="primary"):
         clear_model_cache()
@@ -90,8 +97,10 @@ if table_option == "PatientSummary" and current_data is not None:
                 i + 1, text=f"Fitting model {i+1} for structure {col}..."
             )
 
-            gamlss = GAMLSS(current_data, "AgeYears", col)
-            gamlss_reference_plots.append(gamlss.generate_grids())
+            fitter = GAMLSS(current_data, "AgeYears", col)
+            selector = GAMLSSModelSelector(fitter, MODEL_CANDIDATES)
+            best_model = selector.select_best_model()
+            gamlss_reference_plots.append(best_model.generate_grids())
 
         progress_bar.empty()
         st.session_state.gamlss_reference_plots = gamlss_reference_plots

@@ -1,7 +1,5 @@
-from io import StringIO
-
 import pandas as pd
-from db.data_structures import (
+from resources.brain_structures import (
     CerebralCerebellumCortex,
     CerebralCortex,
     CerebrospinalFluidTotal,

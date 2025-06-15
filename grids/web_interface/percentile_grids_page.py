@@ -3,9 +3,9 @@ from time import sleep
 
 import pandas as pd
 import streamlit as st
-from db.db_utils import load_db_data
-from db.process_input import load_checkbox_dataframe
-from gamlss.gamlss import GAMLSS
+from data_processing.db_utils import load_db_data
+from data_processing.process_input import load_checkbox_dataframe
+from engine.model import GAMLSS
 
 
 def handle_selection():
@@ -120,9 +120,10 @@ if (
                 i + 1, text=f"Calculating percentiles for structure {col}..."
             )
 
-            gamlss = GAMLSS(ref_dataset, "AgeYears", col)
+            model_path = f"/app/data/models/gamlss_{col}.rds"
+            model = GAMLSS.load_model(model_path, ref_dataset, "AgeYears", col)
             gamlss_patient_plots.append(
-                gamlss.generate_grids_oos(st.session_state["patient_table"])
+                model.generate_grids_oos(st.session_state["patient_table"])
             )
 
         progress_bar.empty()
