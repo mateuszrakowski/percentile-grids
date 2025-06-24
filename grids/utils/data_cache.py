@@ -63,10 +63,14 @@ def generate_cache_key(func, args, kwargs):
 
 
 def clear_cache(cache_dir: str = ".cache"):
+    if not os.path.exists(cache_dir):
+        return
     for file in os.listdir(cache_dir):
         os.remove(os.path.join(cache_dir, file))
 
 
 def clear_model_cache(model_path: str = "/app/data/models/"):
+    if not os.path.exists(model_path):
+        return
     for file in os.listdir(model_path):
         os.remove(os.path.join(model_path, file))
