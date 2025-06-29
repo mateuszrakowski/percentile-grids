@@ -1,4 +1,5 @@
 import warnings
+from unittest.mock import MagicMock
 
 import rpy2.robjects as robjects
 import rpy2.robjects.packages as rpackages
@@ -41,6 +42,9 @@ class REnvironment:
                 self.localconverter = localconverter
                 self.robjects = robjects
 
+                # Activate the pandas to R converter
+                self.pandas2ri.activate()
+
                 print("Successfully initialized R environment Singleton.")
                 self._initialized = True
             except Exception as e:
@@ -49,8 +53,10 @@ class REnvironment:
 
     def _setup_mock_objects(self):
         """Sets up mock objects if R or gamlss is not available."""
-        self.base = self.stats = self.grDevices = self.gamlss_r = self.gamlss_dist = {}
-        self.pandas2ri = None
-        self.localconverter = None
-        self.robjects = None
+        self.base = self.stats = self.grDevices = self.gamlss_r = self.gamlss_dist = (
+            MagicMock()
+        )
+        self.pandas2ri = MagicMock()
+        self.localconverter = MagicMock()
+        self.robjects = MagicMock()
         self._initialized = True  # Mark as initialized to avoid retries

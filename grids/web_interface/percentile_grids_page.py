@@ -134,9 +134,16 @@ if (
         st.rerun()
 
     else:
-        st.warning("Select a patient from the table to calculate its percentile grids.")
+        st.warning(
+            "Select a patient from the table to calculate its percentile grids.",
+            icon="⚠️",
+        )
 
-if st.session_state["patient_table"] is not None and selected_df.shape[0] == 1:
+if (
+    st.session_state["patient_table"] is not None
+    and selected_df.shape[0] == 1
+    and ref_dataset is not None
+):
     if (
         st.session_state.gamlss_patient_plots is not None
         and st.session_state.calculated_patient == selected_df.PatientID.iloc[0]

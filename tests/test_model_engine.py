@@ -12,7 +12,7 @@ from grids.engine.model import GAMLSS, FittedGAMLSSModel
 def mock_r_env():
     """Provides a comprehensive mock for the R environment."""
     with patch("grids.engine.model.r_env", autospec=True) as mock_env:
-        mock_env.gamlss.gamlss = MagicMock()
+        mock_env.gamlss_r.gamlss = MagicMock()
         mock_env.stats.AIC = MagicMock(return_value=[150.0])
         mock_env.stats.BIC = MagicMock(return_value=[160.0])
         mock_env.gamlss_r.predictAll = MagicMock()
@@ -143,7 +143,7 @@ class TestGAMLSS:
 
     def test_fit(self, gamlss_instance, mock_r_env, mock_r_model):
         """Tests that the fit method calls the R gamlss function correctly."""
-        mock_r_env.gamlss.gamlss.return_value = mock_r_model
+        mock_r_env.gamlss_r.gamlss.return_value = mock_r_model
         family = "NO"
         formula_mu = "Volume ~ Age"
         formula_sigma = "~ 1"
@@ -153,7 +153,7 @@ class TestGAMLSS:
 
         assert isinstance(fitted_model, FittedGAMLSSModel)
         assert fitted_model.model == mock_r_model
-        mock_r_env.gamlss.gamlss.assert_called_once()
+        mock_r_env.gamlss_r.gamlss.assert_called_once()
 
     def test_load_model(self, source_data, tmp_path, mock_r_env, mock_r_model):
         """Tests loading a pre-saved R model from a file."""

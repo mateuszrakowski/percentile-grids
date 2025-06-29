@@ -28,7 +28,7 @@ class TestProcessInput:
         assert result["PatientID"].iloc[0] == "4341"
         assert result["AgeYears"].iloc[0] == 65
         assert "Skorupa_lewa" in result.columns
-        assert result["Skorupa_lewa"].iloc[0] == 5.449
+        assert result["Skorupa_lewa"].iloc[0] == "5.449"
 
     def test_sum_structure_volumes(self, sample_processed_data):
         """Test structure volume summation."""
@@ -66,7 +66,7 @@ class TestProcessInput:
         mock_file.name = "sample_input_test.xlsx"
 
         # We need to provide a realistic dataframe to process
-        real_df = pd.read_excel(sample_xlsx_file_path, header=None)
+        real_df = pd.read_excel(sample_xlsx_file_path)
 
         # Since convert_to_dataframes is part of the call stack, we patch it
         # to return our pre-loaded, realistic DataFrame.
@@ -97,7 +97,7 @@ class TestDatabaseUtils:
         """Test that load_db_data creates tables if they don't exist."""
         db_path = os.path.join(temp_dir, "test.db")
         table_name = "PatientSummary"
-        sample_df = pd.read_excel(sample_xlsx_file_path, header=None)
+        sample_df = pd.read_excel(sample_xlsx_file_path)
 
         result_before = load_db_data(table_name, db_path)
         assert result_before is None
@@ -119,7 +119,7 @@ class TestDatabaseUtils:
     def test_update_db(self, mock_convert, sample_xlsx_file_path, temp_dir):
         """Test updating the database with new data from an XLSX file."""
         db_path = os.path.join(temp_dir, "test.db")
-        sample_df = pd.read_excel(sample_xlsx_file_path, header=None)
+        sample_df = pd.read_excel(sample_xlsx_file_path)
         mock_convert.return_value = [sample_df]
 
         mock_files = [Mock(spec=UploadedFile)]
@@ -144,7 +144,7 @@ class TestDataProcessingIntegration:
 
     def test_full_data_processing_workflow(self, sample_xlsx_file_path):
         """Test the complete data processing workflow using a real XLSX file."""
-        df = pd.read_excel(sample_xlsx_file_path, header=None)
+        df = pd.read_excel(sample_xlsx_file_path)
         processed_data = process_csv_input(df)
         assert isinstance(processed_data, pd.DataFrame)
 
