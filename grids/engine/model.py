@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import rpy2.robjects as robjects
 from engine.environment import REnvironment
+from rpy2.robjects.packages import PackageNotInstalledError
 from scipy.stats import norm
 
 r_env = REnvironment()
@@ -47,7 +48,7 @@ class FittedGAMLSSModel:
             metric_func = getattr(r_env.stats, metric_name)
             metric_r_object = metric_func(self.model)
             return float(np.array(metric_r_object)[0])
-        except Exception:
+        except (AttributeError, PackageNotInstalledError):
             return float("inf")
 
     def _convert_table_to_r(self, table: pd.DataFrame) -> robjects.DataFrame:
@@ -55,7 +56,7 @@ class FittedGAMLSSModel:
         with r_env.localconverter(
             robjects.default_converter + r_env.pandas2ri.converter
         ):
-            return robjects.conversion.py2rpy(table)
+            return robjects.conversion.py2rpy(table)  # type: ignore
 
     @staticmethod
     def _split_structure_name(structure_name: str) -> str:
@@ -122,7 +123,7 @@ class FittedGAMLSSModel:
 
         percentile_curves = {}
         for p in self.percentiles:
-            params_for_prediction["p"] = p
+            params_for_prediction["p"] = p  # type: ignore
             p_curve = q_function(**params_for_prediction)
             percentile_curves[p] = np.array(p_curve)
 
@@ -167,26 +168,30 @@ class FittedGAMLSSModel:
         plot_range = plot_max_y - plot_min_y
         ax.set_ylim(plot_min_y - 0.1 * plot_range, plot_max_y + 0.1 * plot_range)
 
-        return fig
+        return fig  # type: ignore
 
     def predict_patient_oos(self, patient_data: pd.DataFrame) -> tuple[float, float]:
         oos_zscore = None
         oos_percentile = None
 
-        centiles_pred_func = r_env.gamlss_r.centiles_pred
-        x_value_r = robjects.FloatVector([patient_data[self.x_column].values[0]])
-        y_value_r = robjects.FloatVector([patient_data[self.y_column].values[0]])
+        try:
+            centiles_pred_func = r_env.gamlss_r.centiles_pred
+            x_value_r = robjects.FloatVector([patient_data[self.x_column].values[0]])
+            y_value_r = robjects.FloatVector([patient_data[self.y_column].values[0]])
 
-        zscore_result_r = centiles_pred_func(
-            self.model,
-            xvalues=x_value_r,
-            yval=y_value_r,
-            type="z-scores",
-            xname=self.x_column,
-        )
+            zscore_result_r = centiles_pred_func(
+                self.model,
+                xvalues=x_value_r,
+                yval=y_value_r,
+                type="z-scores",
+                xname=self.x_column,
+            )
 
-        oos_zscore = np.array(zscore_result_r)[0]
-        oos_percentile = norm.cdf(oos_zscore)
+            oos_zscore = np.array(zscore_result_r)[0]
+            oos_percentile = norm.cdf(oos_zscore)
+        except (AttributeError, PackageNotInstalledError):
+            print("R environment not available. Skipping OOS prediction.")
+            oos_zscore, oos_percentile = np.nan, np.nan
 
         return oos_zscore, oos_percentile
 
@@ -332,29 +337,36 @@ class GAMLSS:
         x_column: str,
         y_column: str,
         percentiles: list[float] = [0.05, 0.10, 0.25, 0.50, 0.75, 0.90, 0.95],
-    ) -> FittedGAMLSSModel:
-        """Loads a saved .rds model and returns a FittedGAMLSSModel instance."""
+    ) -> "FittedGAMLSSModel":
+        """
+        Loads a pre-trained GAMLSS model from an RDS file.
+        """
         if not os.path.exists(model_path):
             raise FileNotFoundError(f"No model file found at {model_path}")
-
-        readRDS = r_env.base.readRDS
-        gamlss_model_obj = readRDS(model_path)
-
-        return FittedGAMLSSModel(
-            r_model=gamlss_model_obj,
-            source_data=source_data,
-            x_column=x_column,
-            y_column=y_column,
-            percentiles=percentiles,
-        )
+        try:
+            readRDS = r_env.base.readRDS
+            r_model = readRDS(file=model_path)
+            return FittedGAMLSSModel(
+                r_model=r_model,
+                source_data=source_data,
+                x_column=x_column,
+                y_column=y_column,
+                percentiles=percentiles,
+            )
+        except (AttributeError, PackageNotInstalledError) as e:
+            print(f"Failed to load model: {e}")
+            raise
 
     @staticmethod
     def load_run_info(filename: str) -> None:
-        if os.path.exists(filename):
-            with open(filename, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                return data
-        return None
+        try:
+            if os.path.exists(filename):
+                with open(filename, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    return data
+            return None
+        except Exception as e:
+            print(f"Failed to load run info: {e}")
 
     def fit(
         self,

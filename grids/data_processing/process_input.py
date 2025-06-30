@@ -1,3 +1,7 @@
+import os
+import re
+from datetime import datetime
+
 import pandas as pd
 from resources.brain_structures import (
     CerebralCerebellumCortex,
@@ -13,7 +17,16 @@ from resources.brain_structures import (
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 
 
-def process_csv_input(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+def _parse_input_file(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Parses the input DataFrame into header and body sections.
+
+    Args:
+        df: The input DataFrame from a CSV or Excel file.
+
+    Returns:
+        A tuple containing the header and body DataFrames.
+    """
     head = (
         df.head(5)
         .drop(columns=["Unnamed: 2"])
@@ -22,11 +35,6 @@ def process_csv_input(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
         .T.reset_index(drop=True)
         .iloc[:, [1, 0, 2, 3]]
     )
-
-    body = df[7:].copy()
-    body.columns = df.iloc[6].tolist()
-    body = body.set_index("Struktura").T.iloc[1:].reset_index(drop=True)
-
     head.rename(
         columns={
             "Identyfikator pacjenta": "PatientID",
@@ -37,26 +45,49 @@ def process_csv_input(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
         inplace=True,
     )
 
-    study_date = pd.to_datetime(head["StudyDate"])
-    birth_date = pd.to_datetime(head["BirthDate"])
+    body = df[7:].copy()
+    body.columns = df.iloc[6].tolist()
+    body = body.set_index("Struktura").T.iloc[1:].reset_index(drop=True)
 
-    head["AgeYears"] = (
-        study_date.dt.year[0]
-        - birth_date.dt.year[0]
-        - (
-            (study_date.dt.month[0], study_date.dt.day[0])
-            < (
-                birth_date.dt.month[0],
-                birth_date.dt.day[0],
-            )
-        )
+    body.columns = [
+        col.replace(" – ", "_").replace(" - ", "_").replace(" ", "_").replace("-", "_")
+        for col in body.columns
+    ]
+    return head, body
+
+
+def _calculate_age(birth_date: datetime, study_date: datetime) -> tuple[int, int]:
+    """
+    Calculates age in years and months from birth and study dates.
+
+    Args:
+        birth_date: Birth date as a datetime object.
+        study_date: Study date as a datetime object.
+
+    Returns:
+        A tuple containing age in years and age in months.
+    """
+    age_years = (
+        study_date.year
+        - birth_date.year
+        - ((study_date.month, study_date.day) < (birth_date.month, birth_date.day))
     )
 
-    head["AgeMonths"] = (study_date.dt.month[0] - birth_date.dt.month) % 12
+    age_months = study_date.month - birth_date.month
+    if study_date.day < birth_date.day:
+        age_months -= 1
+    age_months %= 12
 
-    head.loc[study_date.dt.day < birth_date.dt.day, "AgeMonths"] = (
-        head.loc[study_date.dt.day < birth_date.dt.day, "AgeMonths"] - 1
-    ) % 12
+    return age_years, age_months
+
+
+def process_csv_input(df: pd.DataFrame) -> pd.DataFrame:
+    head, body = _parse_input_file(df)
+
+    birth_date = pd.to_datetime(head["BirthDate"].iloc[0])
+    study_date = pd.to_datetime(head["StudyDate"].iloc[0])
+
+    head["AgeYears"], head["AgeMonths"] = _calculate_age(birth_date, study_date)
 
     head = head[
         [
@@ -67,11 +98,6 @@ def process_csv_input(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
             "StudyDate",
             "StudyDescription",
         ]
-    ]
-
-    body.columns = [
-        col.replace(" – ", "_").replace(" - ", "_").replace(" ", "_").replace("-", "_")
-        for col in body.columns
     ]
 
     processed_dataframe = pd.concat([head, body], axis=1)
@@ -90,41 +116,49 @@ def sum_structure_volumes(structures_df: pd.DataFrame) -> pd.DataFrame:
         CerebrospinalFluidTotal,
         TotalStructuresVolume,
     ]
-    summary_table = structures_df.iloc[:, :6]
+    summary_table = structures_df.iloc[:, :6].copy()
 
     for structure_class in structure_classes:
-        structure_volumes = [
-            float(getattr(structures_df, structure_v)[0])
-            for structure_v in structure_class().model_dump().values()
-        ]
-        summary_table[structure_class.__name__] = round(sum(structure_volumes), 2)
+        volume_cols = list(structure_class().model_dump().values())
+        summed_volumes = structures_df[volume_cols].astype(float).sum(axis=1)
+        summary_table[structure_class.__name__] = summed_volumes.round(2)
+
     return summary_table
 
 
 def convert_to_dataframes(input_files: list[UploadedFile]) -> list[pd.DataFrame]:
+    readers = {
+        ".csv": pd.read_csv,
+        ".xlsx": pd.read_excel,
+        ".xls": pd.read_excel,
+    }
     dataframes = []
     for file in input_files:
-        if file.name.endswith(".csv"):
-            dataframes.append(pd.read_csv(file))
-        elif file.name.endswith((".xlsx", ".xls")):
-            dataframes.append(pd.read_excel(file))
+        _, extension = os.path.splitext(file.name)
+        reader = readers.get(extension.lower())
+        if reader:
+            dataframes.append(reader(file))
         else:
-            raise ValueError("Unsupported file format")
+            raise ValueError(f"Unsupported file format: {file.name}")
     return dataframes
 
 
 def load_checkbox_dataframe(
     current_df_state: pd.DataFrame | None, uploaded_files: list[UploadedFile]
 ) -> pd.DataFrame:
-    dataframes = convert_to_dataframes(uploaded_files)
-    standardized_dataframes = [process_csv_input(dataframe) for dataframe in dataframes]
     sum_structures_dataframes = [
-        sum_structure_volumes(dataframe) for dataframe in standardized_dataframes
+        sum_structure_volumes(process_csv_input(dataframe))
+        for dataframe in convert_to_dataframes(uploaded_files)
     ]
 
-    joined_dataframes = pd.concat(
-        [current_df_state, pd.concat(sum_structures_dataframes, axis=0)]
-    ).reset_index(drop=True)
+    dfs_to_concat = [
+        df for df in [current_df_state] + sum_structures_dataframes if df is not None
+    ]
+
+    if not dfs_to_concat:
+        return pd.DataFrame()
+
+    joined_dataframes = pd.concat(dfs_to_concat, ignore_index=True).dropna()
 
     df_with_checkboxes = joined_dataframes.copy()
     if "Select" not in df_with_checkboxes.columns:
